@@ -41,7 +41,7 @@ def user_selection_to_query(search_results) -> int:
     while True:
       selection = input("Choose the correct entry: ")
       
-      if 1 <= int(selection) < len(search_results):
+      if 1 <= int(selection) <= len(search_results):
         break
       print("Be sure to choose a number in the list")
    
@@ -303,6 +303,7 @@ def game_processing(igdb_id):
   columns = ['genre_id', 'platform_id']
   
   full_game_result = full_game_info(igdb_id)
+  igdb_id = full_game_result.get('id')
   row_id = game_import_to_sqlite(full_game_result)
   tbl_ids = [full_game_result.get('genres'), full_game_result.get('platforms')]
   add_game_genre_platform(row_id, tbl_ids, tables, columns)
@@ -317,7 +318,8 @@ def game_processing(igdb_id):
   add_game_websites(websites, row_id)
   
   age_ratings = full_game_result.get('age_ratings')
-  add_age_ratings(age_ratings, row_id)
+  if age_ratings:
+    add_age_ratings(age_ratings, row_id)
 
   multi_ids = full_game_result.get('multiplayer_modes')
   if multi_ids:
@@ -326,6 +328,8 @@ def game_processing(igdb_id):
   expansions = full_game_result.get('expansions')
   if expansions:
     add_game_expansions(expansions)
+
+  return igdb_id
   
 def main():
   search_results = igdb_search()
