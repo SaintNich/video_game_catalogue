@@ -1,6 +1,8 @@
 # Game Library Manager
 
-A personal game cataloguing system built to address shortcomings found in existing solutions. Allows full game entry and tracking across multiple platforms using IGDB as the primary metadata source.
+A personal game cataloguing system built to address shortcomings found in existing solutions. Existing solutions like GoodReads-style game trackers and spreadsheets either lack cross-platform ownership tracking, don’t distinguish between owning and playing, or can’t handle subscription services like Game Pass cleanly. This project solves all three. 
+
+Allows full game entry and tracking across multiple platforms using IGDB as the primary metadata source.
 
 ## Current Features
 - Manual game entry via IGDB search and confirmation
@@ -8,6 +10,17 @@ A personal game cataloguing system built to address shortcomings found in existi
 - Expansion tracking with automatic addition of related titles
 - Steam library synchronization with playtime tracking
 - Reference table sync for genres, platforms, and website types
+
+## Design Philosophy
+Most existing game tracking solutions treat library management as a flat list. This project models it relationally — separating catalogue data (games that exist) from library data (games I have a personal relationship with). A game enters the catalogue when it’s imported from IGDB. A user_game_relationship record is only created when ownership or playtime is explicitly recorded — meaning Game Pass titles sit in the catalogue without inflating the library until actually played.
+
+The schema uses junction tables for genres, platforms, companies, and multiplayer modes, keeping metadata normalized and queryable rather than stored as flat strings.
+
+## What I Built and Why
+- Modeled catalogue vs. library as distinct concepts rather than a single list
+- Designed `user_game_relationship` as a triggered record rather than automatic — ownership or playtime creates it, not import
+- Used junction tables for all many-to-many relationships to keep data queryable
+- Chose SQLite for portability — the entire library lives in a single file
 
 ## Setup
 
