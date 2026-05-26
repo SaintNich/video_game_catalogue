@@ -20,7 +20,7 @@ def igdb_search(igdb_id: int = None) -> list:
     title_search = input("What game are you looking for? ")
   
     # string for "APIcalypse" format, limited to 20
-    body = f"fields name, first_release_date; search \"{title_search}\"; limit 20;"
+    body = f"fields name, first_release_date; search \"{title_search}\"; limit 50;"
     search_results = requests.post(IGDB_GAMES_ENDPOINT, headers = header, data = body).json()
 
   else:
@@ -175,7 +175,7 @@ def add_game_companies(row_id, inv_comp_ids):
   conn.commit()
   conn.close()
       
-def add_game_series(series_ids):
+def add_game_series(series_ids, row_id):
   conn = get_conn()
 
   if series_ids is None:
@@ -187,12 +187,65 @@ def add_game_series(series_ids):
     series_result = series_results[0]
 
     conn.execute("""
-      INSERT OR IGNORE INTO game_series (series_id, series_name, total_games_in_series)
-      VALUES (?, ?, ?)
+      INSERT OR IGNORE INTO game_series (series_id, series_name)
+      VALUES (?, ?)
     """, (
       series_result.get('id'),
       series_result.get('name'),
-      len(series_result.get('games') or [])
+    ))
+
+    print(f"For the {series_result.get('name')} series...")
+    while True:
+      release_place = input(f"What number in the series is this game by release? (Press enter to skip) ")
+      
+      if release_place == '':
+        release_place = None
+        break
+      
+      try:
+        release_place = int(release_place)
+        break
+      
+      except ValueError:
+        print("Please enter a number or press enter to skip.")
+      
+    while True:
+      timeline_place = input("What number in the series is this game by timeline? (Press enter to skip) ")
+      
+      if timeline_place == '':
+        timeline_place = None
+        break
+
+      try:
+        timeline_place = int(timeline_place)
+        break
+      
+      except ValueError:
+        print("Please enter a number or press enter to skip.")
+
+    while True:
+      total_games_in_series = input("What's the total number of games in this series? (Press enter to skip) ")
+
+      if total_games_in_series == '':
+        total_games_in_series = None
+        break
+
+      try:
+        total_games_in_series = int(total_games_in_series)
+        break
+
+      except ValueError:
+        print("Please enter a number or press enter to skip.")
+
+    conn.execute("""
+      INSERT OR IGNORE INTO game_series_link (game_table_id, series_id, place_in_series_release, place_in_series_timeline, total_games_in_series)
+      VALUES (?, ?, ?, ?, ?)
+    """, (
+      row_id,
+      series_result.get('id'),
+      release_place,
+      timeline_place,
+      total_games_in_series
     ))
 
   conn.commit()
@@ -312,7 +365,7 @@ def game_processing(igdb_id):
   add_game_companies(row_id, inv_comp_ids)
   
   series_ids = full_game_result.get('collections')
-  add_game_series(series_ids)
+  add_game_series(series_ids, row_id)
   
   websites = full_game_result.get('websites')
   add_game_websites(websites, row_id)

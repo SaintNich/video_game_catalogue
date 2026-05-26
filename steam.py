@@ -1,11 +1,10 @@
 import datetime as dt
 import os
 import requests
-import sqlite3
 from access_token import create_header
 from config import STEAM_ENDPOINT, IGDB_GAMES_ENDPOINT, get_conn
 from dotenv import load_dotenv
-from igdb import game_processing
+from igdb import igdb_search, user_selection_to_query, game_processing
 
 load_dotenv()
 API_KEY = os.getenv('api_key')
@@ -19,7 +18,7 @@ def get_steam_info() -> list:
   return steam_games
 
 def steam_selection_to_query(steam_game_name: str, steam_game: dict) -> int:
-  body = f"fields name, first_release_date; search \"{steam_game_name}\"; limit 20;"
+  body = f"fields name, first_release_date; search \"{steam_game_name}\"; limit 50;"
   steam_search_results = requests.post(IGDB_GAMES_ENDPOINT, headers = create_header(), data = body).json()
 
   print(f"Game to select: {steam_game_name}")
@@ -84,14 +83,15 @@ def main():
   for steam_game in steam_games:
     steam_game_name = steam_game.get('name')
     steam_game_id = steam_game.get('appid')
-    steam_game_playtime = round((steam_game.get('playtime_forever') / 60), 2)
+    steam_game_playtime = round((steam_game.get('playtime_forever') / 60), 2) # currently a placeholder for future use
     igdb_id = steam_selection_to_query(steam_game_name, steam_game)
     
     if check_if_steam_game_exists(steam_game_id):
       continue
     else:
       if igdb_id is None:
-        igdb_id = game_processing(igdb_id)
+        search_results = igdb_search()
+        igdb_id = user_selection_to_query(search_results)
 
       game_processing(igdb_id)  
       write_additional_steam_game_information(steam_game_id, igdb_id)

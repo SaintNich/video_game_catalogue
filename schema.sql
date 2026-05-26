@@ -1,28 +1,23 @@
-CREATE TABLE IF NOT EXISTS game_series (
-  series_id INTEGER PRIMARY KEY AUTOINCREMENT,
-  series_name TEXT NOT NULL,
-  total_games_in_series INT
-);
-
 CREATE TABLE IF NOT EXISTS games (
   game_table_id INTEGER PRIMARY KEY AUTOINCREMENT,
   igdb_id INT UNIQUE,
   steam_id INT UNIQUE,
   title TEXT NOT NULL,
   release_date TEXT,
-  series_id INT,
-  place_in_series_release TEXT,
-  place_in_series_timeline TEXT,
   controller_supported INT,
   expansion_of INT,
-  FOREIGN KEY (series_id) REFERENCES game_series(series_id),
   FOREIGN KEY (expansion_of) REFERENCES games(game_table_id)
+);
+
+CREATE TABLE IF NOT EXISTS game_series (
+  series_id INT PRIMARY KEY,
+  series_name TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS user_game_relationship (
   relationship_id INTEGER PRIMARY KEY AUTOINCREMENT,
   game_table_id INT NOT NULL,
-  play_status TEXT NOT NULL DEFAULT 'Backlog',
+  catalog_status TEXT NOT NULL DEFAULT 'Backlog',
   date_added TEXT NOT NULL,
   date_main_completed TEXT,
   date_completed TEXT,
@@ -143,6 +138,17 @@ CREATE TABLE IF NOT EXISTS game_ratings (
   FOREIGN KEY (game_table_id) REFERENCES games(game_table_id),
   FOREIGN KEY (category_id) REFERENCES age_rating_category(category_id),
   FOREIGN KEY (description_id) REFERENCES age_rating_description(description_id)
+);
+
+CREATE TABLE IF NOT EXISTS game_series_link (
+  game_table_id INT NOT NULL,
+  series_id INT NOT NULL,
+  place_in_series_release INT,
+  place_in_series_timeline INT,
+  total_games_in_series INT,
+  PRIMARY KEY (game_table_id, series_id),
+  FOREIGN KEY (game_table_id) REFERENCES games(game_table_id),
+  FOREIGN KEY (series_id) REFERENCES game_series(series_id)
 );
 
 CREATE TABLE IF NOT EXISTS user_platform_own (
