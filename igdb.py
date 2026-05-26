@@ -12,6 +12,7 @@ from config import (
   ESRB_RATING_ID,
   get_conn
 )
+from hltb import process_hltb_info
 
 header = create_header()
 
@@ -49,7 +50,7 @@ def user_selection_to_query(search_results) -> int:
     choice = search_results[int(selection) - 1]
     igdb_id = choice.get('id')
     
-    return igdb_id
+    return igdb_id, game_title
 
   except ValueError:
     print("Please enter an integer")
@@ -357,6 +358,7 @@ def game_processing(igdb_id):
   
   full_game_result = full_game_info(igdb_id)
   igdb_id = full_game_result.get('id')
+  game_title = full_game_result.get('name')
   row_id = game_import_to_sqlite(full_game_result)
   tbl_ids = [full_game_result.get('genres'), full_game_result.get('platforms')]
   add_game_genre_platform(row_id, tbl_ids, tables, columns)
@@ -381,6 +383,8 @@ def game_processing(igdb_id):
   expansions = full_game_result.get('expansions')
   if expansions:
     add_game_expansions(expansions)
+
+  process_hltb_info(game_title, row_id)
 
   return igdb_id
   

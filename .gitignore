@@ -3,4 +3,4 @@ venv/
 __pycache__/
 *.pyc
 *.db
-test_query.py
+text_query.py

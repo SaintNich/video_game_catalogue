@@ -1,6 +1,9 @@
 import requests
-from access_token import create_header
+from howlongtobeatpy import HowLongToBeat
 
-results = requests.post('https://api.igdb.com/v4/games', headers = create_header(), data = 'fields name, collections.name; where name = \"Tomb Raider\";').json()
+results = HowLongToBeat().search_from_id(7231)
 
-print(results)
+print(results.game_name)
+
+for result in dir(results):
+    print(result)
