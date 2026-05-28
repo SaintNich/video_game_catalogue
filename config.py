@@ -64,3 +64,47 @@ def get_conn ():
   conn = sqlite3.connect(DB_PATH)
   conn.execute("PRAGMA foreign_keys = ON")
   return conn
+
+# GAMEPASS
+catalog_of_ids_url = 'https://catalog.gamepass.com/sigls/v3?'
+catalog_of_titles_url = 'https://displaycatalog.mp.microsoft.com/v7.0/products?'
+
+GAMEPASS_PLATFORMS = [
+  'ConsoleGen8',
+  'ConsoleGen9',
+  'ConsoleGen8;ConsoleGen9',
+  'pc'
+]
+
+GAMEPASS_TIERS = {
+  'ultimate': {
+    'tier_code': 'CFQ7TTC0KHS0',
+    'sigl': '97c6c862-d28a-4907-a3d5-c401f2296a53'
+  },
+  'premium': {
+    'tier_code': 'CFQ7TTC0P85B',
+    'sigl': '09a72c0d-c466-426a-9580-b78955d8173a'
+  },
+  'essential': {
+    'tier_code': 'CFQ7TTC0K5DJ',
+    'sigl': '34031711-5a70-4196-bab7-45757dc2294e'
+  },
+  'console': {
+    'tier_code': 'CFQ7TTC0K6L8',
+    'sigl': 'f6f1f99f-9b49-4ccd-b3bf-4d9767a77f5e'
+  },
+  'pc': {
+    'tier_code': 'CFQ7TTC0KGQ8',
+    'sigl': '609d944c-d395-4c0a-9ea4-e9f39b52c1ad'
+  }
+}
+
+#'recently_added': '06323672-b8c8-43cc-b0de-32d5a9834749'
+#'most_popular_a': 'eab7757c-ff70-45af-bfa6-79d3cfb2bf81'
+#'coming_to_gamepass_a': '095bda36-f5cd-43f2-9ee1-0a72f371fb96'
+#'leaving_soon_a': '393f05bf-e596-4ef6-9487-6d4fa0eab987'
+#'most_popular_b': 'a884932a-f02b-40c8-a903-a008c23b1df1'
+#'coming_to_gamepass_b': '4165f752-d702-49c8-886b-fb57936f6bae'
+#'leaving_soon_b': 'cc7fc951-d00f-410e-9e02-5e4628e04163
+# GAMEPASS_EA_PLAY = 'CFQ7TTC0K5DH'
+# GAMEPASS_UBISOFT = 'CFQ7TTC0QH5H'

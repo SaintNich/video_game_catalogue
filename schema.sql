@@ -2,6 +2,7 @@ CREATE TABLE IF NOT EXISTS games (
   game_table_id INTEGER PRIMARY KEY AUTOINCREMENT,
   igdb_id INT UNIQUE,
   steam_id INT UNIQUE,
+  gamepass_id TEXT UNIQUE,
   title TEXT NOT NULL,
   release_date TEXT,
   controller_supported INT,
@@ -85,12 +86,14 @@ CREATE TABLE IF NOT EXISTS hltb_data (
 );
 
 CREATE TABLE IF NOT EXISTS gamepass_catalog (
-  gamepass_id INTEGER PRIMARY KEY AUTOINCREMENT,
-  game_table_id INT,
+  gamepass_id TEXT PRIMARY KEY,
   game_title TEXT NOT NULL,
-  active_on_gamepass INT NOT NULL,
-  tier_available TEXT NOT NULL,
-  FOREIGN KEY (game_table_id) REFERENCES games(game_table_id)
+  active_on_gamepass INT DEFAULT 0,
+  ultimate INT DEFAULT 0,
+  premium INT DEFAULT 0,
+  essential INT DEFAULT 0,
+  console INT DEFAULT 0,
+  pc INT DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS game_genres (
