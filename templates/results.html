@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<head>
+
+</head>
+<body>
+    <ol>
+        {% for result in search_results %}
+        <li>
+            <form method="POST" action="{{ url_for('game_selection')}}">
+                <label for="game_selection">{{ result.game_title }} released in {{ result.release_year }}</label>
+                <input type="hidden" name="game_selection" value="{{ result.igdb_id }}, {{ result.game_title }}">
+                <button type="submit">Select Game</button>
+            </form>
+        </li>
+        {% endfor %}
+    </ol>
+</body>

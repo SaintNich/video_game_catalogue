@@ -108,7 +108,7 @@ def game_ownership(game_table_id: int, relationship_id: int):
 
     # for each platform, check ownership
     for platform_id, platform in game_tables:
-        own_prompt = input(f"Do you own the game on {platform}? Yes or No" ).lower()
+        own_prompt = input(f"Do you own the game on {platform}? Yes or No? ").lower()
 
         while True:
             if own_prompt == 'yes' or own_prompt == 'y' or own_prompt == 'no' or own_prompt == 'n':
@@ -139,7 +139,7 @@ def game_played(game_table_id: int, relationship_id: int):
 
     # for each platform, check if played
     for platform_id, platform in game_tables:
-        played_prompt = input(f"Have you played the game on {platform}? Yes or No" ).lower()
+        played_prompt = input(f"Have you played the game on {platform}? Yes or No? ").lower()
 
         while True:
             if played_prompt == 'yes' or played_prompt == 'y' or played_prompt == 'no' or played_prompt == 'n':

@@ -12,73 +12,35 @@ from config import (
   ESRB_RATING_ID,
   get_conn
 )
-from hltb import process_hltb_info
+from hltb import get_hltb_info, add_hltb_info
 
 header = create_header()
 
-def igdb_search(igdb_id: int = None) -> list:
+def igdb_search(igdb_id: int = None, web_input: str = None) -> list:
+  # checking if igdb_id was passed
   if igdb_id is None:
-    title_search = input("What game are you looking for? ")
+    title_search = web_input
   
-    # string for "APIcalypse" format, limited to 20
+    # string for "APIcalypse" format, limited to 50
     body = f"fields name, first_release_date; search \"{title_search}\"; limit 50;"
     search_results = requests.post(IGDB_GAMES_ENDPOINT, headers = header, data = body).json()
 
   else:
+    # string to search by igdb_id
     body = f"fields name, first_release_date; where id = {igdb_id}; sort id asc;"
     search_results = requests.post(IGDB_GAMES_ENDPOINT, headers = header, data = body).json()
-  
+
   return search_results
- 
-def user_selection_to_query(search_results) -> int:
-  # creates the list for the user to view of options
-  for i, result in enumerate(search_results):
-    game_title = result.get('name')
-    release_year = dt.datetime.fromtimestamp(result.get('first_release_date')).year if result.get('first_release_date') else 'unknown'
-    igdb_id = result.get('id')
-    print(f"{i+1}. {game_title}, released in {release_year} [ID = {igdb_id}]")
-
-  try:
-    while True:
-      selection = input("Choose the correct entry: ")
-      
-      if 1 <= int(selection) <= len(search_results):
-        break
-      print("Be sure to choose a number in the list")
-   
-    # choice needs to be from index 0
-    choice = search_results[int(selection) - 1]
-    igdb_id = choice.get('id')
-    
-    return igdb_id, game_title
-
-  except ValueError:
-    print("Please enter an integer")
-    return user_selection_to_query(search_results)
 
 def full_game_info(igdb_id: int, search_results = None):
   if search_results is None:  
     srch_results = igdb_search(igdb_id)
     srch_result = srch_results[0]
     igdb_id = srch_result.get('id')
+    
+  body = f"fields name, first_release_date, genres, platforms, involved_companies, collections, multiplayer_modes, parent_game, expansions, websites, age_ratings; where id = {igdb_id}; sort id asc;"
+  full_game_results = requests.post(IGDB_GAMES_ENDPOINT, headers = header, data = body).json()
   
-  else:
-    game_title = search_results.get('name')
-    release_year = dt.datetime.fromtimestamp(search_results.get('first_release_date')).year if search_results.get('first_release_date') else 'unknown'
-    while True:
-      # allow "yes", "no", "y", or "n" regardless of case
-      confirm_choice = input(f"You selected {game_title}, released in {release_year}, correct? (\"Yes\" or \"No\"): ").lower()
-      if confirm_choice == 'yes' or confirm_choice == 'y' or confirm_choice == 'no' or confirm_choice == 'n':
-        break
-      print("Please enter \"Yes\" or \"No\"")
-  
-  if search_results is None or confirm_choice == 'yes' or confirm_choice == 'y':
-    body = f"fields name, first_release_date, genres, platforms, involved_companies, collections, multiplayer_modes, parent_game, expansions, websites, age_ratings; where id = {igdb_id}; sort id asc;"
-    full_game_results = requests.post(IGDB_GAMES_ENDPOINT, headers = header, data = body).json()
-  else:
-    # if user says the selection was wrong, starts back at selection
-    return user_selection_to_query(search_results)
-
   # remove the confirmed result from the list
   full_game_result = full_game_results[0]
   
@@ -176,7 +138,7 @@ def add_game_companies(row_id, inv_comp_ids):
   conn.commit()
   conn.close()
       
-def add_game_series(series_ids, row_id):
+def add_game_series(series_ids, row_id, release_place = '', timeline_place = '', total_games_in_series = ''):
   conn = get_conn()
 
   if series_ids is None:
@@ -194,49 +156,18 @@ def add_game_series(series_ids, row_id):
       series_result.get('id'),
       series_result.get('name'),
     ))
-
-    print(f"For the {series_result.get('name')} series...")
-    while True:
-      release_place = input(f"What number in the series is this game by release? (Press enter to skip) ")
       
-      if release_place == '':
-        release_place = None
-        break
+    if release_place == '':
+      release_place = None
+      break
       
-      try:
-        release_place = int(release_place)
-        break
-      
-      except ValueError:
-        print("Please enter a number or press enter to skip.")
-      
-    while True:
-      timeline_place = input("What number in the series is this game by timeline? (Press enter to skip) ")
-      
-      if timeline_place == '':
-        timeline_place = None
-        break
+    if timeline_place == '':
+      timeline_place = None
+      break
 
-      try:
-        timeline_place = int(timeline_place)
-        break
-      
-      except ValueError:
-        print("Please enter a number or press enter to skip.")
-
-    while True:
-      total_games_in_series = input("What's the total number of games in this series? (Press enter to skip) ")
-
-      if total_games_in_series == '':
-        total_games_in_series = None
-        break
-
-      try:
-        total_games_in_series = int(total_games_in_series)
-        break
-
-      except ValueError:
-        print("Please enter a number or press enter to skip.")
+    if total_games_in_series == '':
+      total_games_in_series = None
+      break
 
     conn.execute("""
       INSERT OR IGNORE INTO game_series_link (game_table_id, series_id, place_in_series_release, place_in_series_timeline, total_games_in_series)
@@ -352,47 +283,46 @@ def add_game_expansions(expansions):
   for expansion in expansions:
     game_processing(expansion)
 
-def game_processing(igdb_id): 
+def game_processing(igdb_id: int): 
   tables = ['game_genres', 'game_platforms']
   columns = ['genre_id', 'platform_id']
   
   full_game_result = full_game_info(igdb_id)
   igdb_id = full_game_result.get('id')
-  game_title = full_game_result.get('name')
   row_id = game_import_to_sqlite(full_game_result)
   tbl_ids = [full_game_result.get('genres'), full_game_result.get('platforms')]
-  add_game_genre_platform(row_id, tbl_ids, tables, columns)
-  
   inv_comp_ids = full_game_result.get('involved_companies')
-  add_game_companies(row_id, inv_comp_ids)
-  
   series_ids = full_game_result.get('collections')
-  add_game_series(series_ids, row_id)
-  
   websites = full_game_result.get('websites')
+  age_ratings = full_game_result.get('age_ratings')
+  multi_ids = full_game_result.get('multiplayer_modes')
+  expansions = full_game_result.get('expansions')
+  
+  add_game_genre_platform(row_id, tbl_ids, tables, columns)
+  add_game_companies(row_id, inv_comp_ids)
+  add_game_series(series_ids, row_id)
   add_game_websites(websites, row_id)
   
-  age_ratings = full_game_result.get('age_ratings')
   if age_ratings:
     add_age_ratings(age_ratings, row_id)
 
-  multi_ids = full_game_result.get('multiplayer_modes')
   if multi_ids:
     add_multiplayer_modes(multi_ids)
-
-  expansions = full_game_result.get('expansions')
+  
   if expansions:
     add_game_expansions(expansions)
 
-  process_hltb_info(game_title, row_id)
-
-  return igdb_id
+  if series_ids:
+    return row_id, series_ids
   
-def main():
+  return row_id
+  
+def main(igdb_id: int, series_ids: int = None):
   search_results = igdb_search()
-  igdb_id = user_selection_to_query(search_results)
 
-  game_processing(igdb_id)
+  game_processing()
+  if series_ids:
+    add_game_series(series_ids)
 
 if __name__ == "__main__":
   main()
