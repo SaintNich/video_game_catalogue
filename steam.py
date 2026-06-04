@@ -4,7 +4,7 @@ import requests
 from access_token import create_header
 from config import STEAM_ENDPOINT, IGDB_GAMES_ENDPOINT, get_conn
 from dotenv import load_dotenv
-from igdb import igdb_search, user_selection_to_query, game_processing
+from igdb import igdb_search, game_processing
 
 load_dotenv()
 API_KEY = os.getenv('api_key')
@@ -91,7 +91,6 @@ def main():
     else:
       if igdb_id is None:
         search_results = igdb_search()
-        igdb_id = user_selection_to_query(search_results)
 
       game_processing(igdb_id)  
       write_additional_steam_game_information(steam_game_id, igdb_id)

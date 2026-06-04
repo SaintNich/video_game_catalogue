@@ -3,6 +3,12 @@ from config import get_conn
 from igdb import igdb_search, game_processing, add_game_series
 from hltb import get_hltb_info, add_hltb_info
 from flask import Flask, render_template, request, redirect, url_for
+from steam import (
+    get_steam_info, 
+    check_if_steam_game_exists, 
+    steam_selection_to_query,
+    write_additional_steam_game_information
+)
 
 app = Flask(__name__)
 
@@ -58,9 +64,11 @@ def game_selection():
         game_selection = tuple(request.form['game_selection'].split(','))
         igdb_id, game_title = game_selection
         igdb_id = int(igdb_id)
+        steam_game_id = request.form['steam_game_id']
         
         hltb_results = get_hltb_info(game_title)
         processed_game = game_processing(igdb_id)
+        write_additional_steam_game_information(steam_game_id, igdb_id)
         
         if isinstance(processed_game, tuple):
             game_table_id, series_ids = processed_game
@@ -109,5 +117,56 @@ def processing_no_series():
         add_hltb_info(hltb_id, game_table_id, hltb_main_story, hltb_main_extras, hltb_completionist, hltb_all_styles)
 
         return redirect(url_for('index'))
+    else:
+        return redirect(url_for('index'))
+    
+@app.route('/steam_sync', methods = ['GET', 'POST'])
+def steam_sync():
+    if request.method == 'POST':
+        steam_games = get_steam_info()
+        steam_games_not_in_db = []
+
+        for steam_game in steam_games:
+            steam_game_name = steam_game.get('name')
+            steam_game_id = steam_game.get('appid')
+            steam_game_playtime = round((steam_game.get('playtime_forever') / 60), 2)
+
+            if check_if_steam_game_exists(steam_game_id):
+                continue
+            else:
+                steam_games_not_in_db.append({
+                    'steam_game_id': steam_game_id,
+                    'steam_game_name': steam_game_name,
+                    'steam_game_playtime': steam_game_playtime
+                })
+        
+        return render_template('steam_review.html', steam_games_not_in_db = steam_games_not_in_db)
+    else:
+        return redirect(url_for('index'))
+    
+@app.route('/steam_search', methods = ['GET', 'POST'])
+def steam_search():
+    if request.method == 'POST':
+
+        if 'steam_selection' in request.form:
+            steam_selection = tuple(request.form['steam_selection'].split(', '))
+            steam_game_id, steam_game_name, steam_game_playtime = steam_selection
+        
+            return render_template('steam_search.html', steam_selection = steam_selection, steam_game_name = steam_game_name, steam_game_id = steam_game_id)
+        else:
+            steam_search = request.form['steam_search']
+            steam_game_id = request.form['steam_game_id']
+
+            search_results_raw = igdb_search(web_input = steam_search)
+
+            search_results = []
+
+            for search_result in search_results_raw:
+                name = search_result.get('name')
+                release_year = dt.datetime.fromtimestamp(search_result.get('first_release_date')).year if search_result.get('first_release_date') else 'unknown'
+                igdb_id = search_result.get('id')
+                search_results.append({'game_title': name, 'release_year': release_year, 'igdb_id': igdb_id})
+    
+            return render_template('results.html', search_results = search_results, steam_game_id = steam_game_id)
     else:
         return redirect(url_for('index'))

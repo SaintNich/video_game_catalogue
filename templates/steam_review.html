@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<head>
+
+</head>
+<body>
+    <ol>
+        {% for steam_game in steam_games_not_in_db %}
+        <li>
+            <form method="POST" action="{{ url_for('steam_search') }}">
+                <label for="steam_selection">{{ steam_game.steam_game_name }}</label>
+                <input type="hidden" name="steam_selection" value="{{ steam_game.steam_game_id }}, {{ steam_game.steam_game_name }}, {{ steam_game.steam_game_playtime }}">
+                <button type="submit">Select Game</button>
+            </form>
+        </li>
+        {% endfor %}
+    </ol>
+</body>

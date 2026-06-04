@@ -147,7 +147,7 @@ def add_game_series(series_ids, row_id, release_place = '', timeline_place = '',
   for series_id in series_ids:
     body = f"fields name, games; where id = {series_id}; sort id asc;"
     series_results = requests.post(IGDB_COLLECTIONS_ENDPOINT, headers = header, data = body).json()
-    series_result = series_results[0]
+    series_result = series_results[0] if series_results[0] else series_results
 
     conn.execute("""
       INSERT OR IGNORE INTO game_series (series_id, series_name)
@@ -299,10 +299,12 @@ def game_processing(igdb_id: int):
   expansions = full_game_result.get('expansions')
   
   add_game_genre_platform(row_id, tbl_ids, tables, columns)
-  add_game_companies(row_id, inv_comp_ids)
   add_game_series(series_ids, row_id)
   add_game_websites(websites, row_id)
   
+  if inv_comp_ids:
+    add_game_companies(row_id, inv_comp_ids)
+
   if age_ratings:
     add_age_ratings(age_ratings, row_id)
 

@@ -3,8 +3,12 @@
 
 </head>
 <body>
-    <form method="POST", action="{{ url_for('game_search') }}">
+    <form method="POST" action="{{ url_for('game_search') }}">
         <input type="text" name="game_search" placeholder="What are you searching for?">
         <button type="submit">Search</button>
+    </form>
+    <form method="POST" action="{{ url_for('steam_sync') }}">
+        <input type="hidden" name="steam_sync">
+        <button type="submit">Sync Steam</button>
     </form>
 </body>
