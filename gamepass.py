@@ -1,5 +1,4 @@
 import datetime as dt
-import json
 import requests
 from config import GAMEPASS_TIERS, GAMEPASS_PLATFORMS, catalog_of_ids_url, catalog_of_titles_url, get_conn
 
@@ -28,13 +27,13 @@ def create_master_set(consoles: dict) -> list:
     for platform in GAMEPASS_PLATFORMS:
         for tier in GAMEPASS_TIERS:
             master_set.update(consoles.get(platform).get(tier))
-
+    
     return list(master_set)
 
 def add_to_gamepass_table(master_set: list):
     conn = get_conn()
     list_size = 100
-
+    print(type(master_set))
     chunked_list = [master_set[i: i + list_size] for i in range(0, len(master_set), list_size)]
     for list in chunked_list:
         list_str = ','.join(list)

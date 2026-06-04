@@ -1,8 +1,9 @@
 import datetime as dt
 from config import get_conn
-from igdb import igdb_search, game_processing, add_game_series
-from hltb import get_hltb_info, add_hltb_info
 from flask import Flask, render_template, request, redirect, url_for
+from gamepass import get_bigIds, create_master_set, add_to_gamepass_table, update_with_tiers
+from hltb import get_hltb_info, add_hltb_info
+from igdb import igdb_search, game_processing, add_game_series
 from steam import (
     get_steam_info, 
     check_if_steam_game_exists, 
@@ -16,29 +17,54 @@ app = Flask(__name__)
 def index():
     conn = get_conn()
 
-    relationship_data = conn.execute("""
+    catalog_data = conn.execute("""
         SELECT 
             g.title,
             g.release_date,
+            p.title AS expansion_of,
+            GROUP_CONCAT(s.series_name, ', '),
+            CASE
+                WHEN m.multiplayer_id is NULL then 'No'
+                ELSE 'Yes'
+            END AS multiplayer,
             u.catalog_status,
+            u.hours_played,
             u.rating,
             u.user_notes
         FROM games g
-        JOIN user_game_relationship u
+        LEFT JOIN user_game_relationship u
         ON g.game_table_id = u.game_table_id
+        LEFT JOIN multiplayer_modes m
+        ON g.igdb_id = m.igdb_id
+        LEFT JOIN (SELECT
+            g.series_id,
+            g.series_name,
+            s.game_table_id
+            FROM game_series g
+            JOIN game_series_link s
+            ON g.series_id = s.series_id
+            ) s
+        ON g.game_table_id = s.game_table_id                          
+        LEFT JOIN games p
+        ON g.expansion_of = p.game_table_id
+        GROUP BY g.title, g.release_date, p.title, u.catalog_status, u.hours_played, u.rating, u.user_notes
     """).fetchall()
 
     conn.close()
 
-    relationship_table = [{
+    catalog_table = [{
         'title': title, 
         'release_date': release_date,
+        'expansion_of': expansion_of,
+        'series_name': series_name,
+        'multiplayer': multiplayer,
         'catalog_status': catalog_status,
+        'hours_played': hours_played,
         'rating': rating,
-        'user_notes': user_notes
-    } for title, release_date, catalog_status, rating, user_notes in relationship_data]
+        'user_notes': user_notes,
+    } for title, release_date, expansion_of, series_name, multiplayer, catalog_status, hours_played, rating, user_notes in catalog_data]
 
-    return render_template('index.html')
+    return render_template('index.html', catalog_table = catalog_table)
 
 @app.route('/game_search', methods = ['GET', 'POST'])
 def game_search():
@@ -147,7 +173,6 @@ def steam_sync():
 @app.route('/steam_search', methods = ['GET', 'POST'])
 def steam_search():
     if request.method == 'POST':
-
         if 'steam_selection' in request.form:
             steam_selection = tuple(request.form['steam_selection'].split(', '))
             steam_game_id, steam_game_name, steam_game_playtime = steam_selection
@@ -168,5 +193,17 @@ def steam_search():
                 search_results.append({'game_title': name, 'release_year': release_year, 'igdb_id': igdb_id})
     
             return render_template('results.html', search_results = search_results, steam_game_id = steam_game_id)
+    else:
+        return redirect(url_for('index'))
+    
+@app.route('/gamepass_update', methods = ['GET', 'POST'])
+def gamepass_update():
+    if request.method == 'POST':
+        consoles = get_bigIds()
+        master_set = create_master_set(consoles)
+        add_to_gamepass_table(master_set)
+        update_with_tiers(consoles)
+
+        return redirect(url_for('index'))
     else:
         return redirect(url_for('index'))

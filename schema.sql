@@ -175,35 +175,3 @@ CREATE TABLE IF NOT EXISTS igdb_table_refresh (
   table_name TEXT PRIMARY KEY,
   last_updated TEXT
 );
-
-/*
-WITH comb_genres AS (
-  SELECT
-    game_genres.game_table_id,
-    GROUP_CONCAT(genres.genre, ', ') AS genre
-  FROM game_genres
-  JOIN genres
-  ON game_genres.genre_id = genres.genre_id
-  GROUP BY game_genres.game_table_id
-), 
-comb_platforms AS (
-  SELECT
-    game_platforms.game_table_id,
-    GROUP_CONCAT(platforms.platform, ', ') AS platform
-  FROM game_platforms
-  JOIN platforms
-  ON game_platforms.platform_id = platforms.platform_id
-  GROUP BY game_platforms.game_table_id
-)
-SELECT
-  games.game_table_id,
-  games.igdb_id,
-  games.title,
-  comb_genres.genre,
-  comb_platforms.platform
-FROM games
-LEFT JOIN comb_genres
-ON games.game_table_id = comb_genres.game_table_id
-LEFT JOIN comb_platforms
-ON games.game_table_id = comb_platforms.game_table_id;
-*/

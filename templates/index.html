@@ -11,4 +11,34 @@
         <input type="hidden" name="steam_sync">
         <button type="submit">Sync Steam</button>
     </form>
+    <form method="POST" action="{{ url_for('gamepass_update') }}">
+        <input type="hidden" name="gamepass_update">
+        <button type="submit">Update GamePass Catalog</button>
+    </form>
+    <table>
+        <tr>
+            <th>Game Name</th>
+            <th>Release Year</th>
+            <th>Expansion Of</th>
+            <th>Series Name</th>
+            <th>Multiplayer?</th>
+            <th>Catalog Status</th>
+            <th>Hours Played</th>
+            <th>Rating</th>
+            <th>Notes</th>
+        </tr>
+        {% for row in catalog_table %}
+        <tr>
+            <td>{{ row.title }}</td>
+            <td>{{ row.release_date }}</td>
+            <td>{{ row.expansion_of }}</td>
+            <td>{{ row.series_name }}</td>
+            <td>{{ row.multiplayer }}</td>
+            <td>{{ row.catalog_status }}</td>
+            <td>{{ row.hours_played }}</td>
+            <td>{{ row.rating }}</td>
+            <td>{{ row.user_notes }}</td>
+        </tr>
+        {% endfor %}
+    </table>
 </body>
