@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<head>
+
+</head>
+<body>
+    <form method="POST", action="{{ url_for('') }}">
+        <label for="catalog_status">Catalog Status: </label>
+        <select name="catalog_status">
+            <option value="backlog" selected>Backlog</option>
+            <option value="in_progress">In Progress</option>
+            <option value="main_complete">Main Story Completed</option>
+            <option value="fully_complete">Game Fully Completed</option>
+            <option value="abandoned">Abandoned</option>
+        </select>
+        <label for="date_main">Date main story completed: </label>
+        <input type="date" name="date_main">
+        <label for="date_full">Date game 100% completed: </label>
+        <input type="date" name="date_full">
+        <label for="hours_played">Hours played: </label>
+        <input type="number" name="hours_played">
+        <label for="rating">Rating: </label>
+        <input type="number" min="0" max="5">
+        <label for="user_notes">Notes: </label>
+        <textarea name="user_notes" rows="4" cols="50">Any notes to remember about this game.</textarea>
+        <button type="submit">Search</button>
+    </form>
+</body>

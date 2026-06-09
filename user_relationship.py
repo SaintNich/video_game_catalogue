@@ -1,41 +1,9 @@
 import datetime as dt
 from config import get_conn
 
-# Defined the different relationship update options
-relationship_updates = {
-    'update_types': {
-        1: 'Ownership update',
-        2: 'Where played update',
-        3: 'Game catalog status',
-        4: 'Game completion update',
-        5: 'Time played update',
-        6: 'Game rating update',
-        7: 'User notes update',
-        0: 'No updates at this time'
-    }
-}
-
-yes_or_no_confirmation = 'Please enter yes or no (y or n).'
-
-def create_user_game_relationship () -> tuple[int, int, int]:
+def create_user_game_relationship (game_table_id: int) -> tuple[int, int, int]:
     conn = get_conn()
-    game_selection = input("Enter a game you would like to establish a relationship for: ")
     today = dt.datetime.now().date().isoformat()
-
-    # extract game_table_id from games
-    game_table_id_tuple = conn.execute("""
-        SELECT game_table_id FROM games
-        WHERE title LIKE ?
-    """, ('%' + game_selection + '%', )).fetchone()
-
-    # isolate the game_table_id from the tuple
-    game_table_id = game_table_id_tuple[0] if game_table_id_tuple else None
-
-    # extract the title stored in the games table
-    actual_title_tuple = conn.execute("""
-        SELECT title FROM games
-        WHERE game_table_id = ?
-    """, (game_table_id, )).fetchone()
 
     # extract the relationship_id
     relationship_id_tuple = conn.execute("""
@@ -43,13 +11,13 @@ def create_user_game_relationship () -> tuple[int, int, int]:
         WHERE game_table_id = ?
     """, (game_table_id, )).fetchone()
 
-    # isolate the ids from the tuples
-    actual_title = actual_title_tuple[0] if actual_title_tuple else None
+    # isolate the id from the tuple
     relationship_id = relationship_id_tuple[0] if relationship_id_tuple else None
 
-    # check if relationship_id exists and define relationship_update based on result
+    # check if relationship_id exists
     if relationship_id:
-        relationship_update = input(f"Relationship already exists for {actual_title}. Do you wish to update that relationship? ").lower()
+        conn.close()
+        return
     else:
         # if relationship_id does not exist, create entry into user_game_relationship
         conn.execute("""
@@ -57,42 +25,8 @@ def create_user_game_relationship () -> tuple[int, int, int]:
             VALUES (?, ?)
         """, (game_table_id, today))
 
-        relationship_update = input(f"Relationship established for {actual_title} effective {today}. Would you like to make any other updates to the relationship? ").lower()
-
     conn.commit()
     conn.close()
-
-    # make sure user only enters an acceptable version of yes or no
-    while True:
-        if relationship_update == 'yes' or relationship_update == 'y' or relationship_update == 'no' or relationship_update == 'n':
-            break
-        print(yes_or_no_confirmation)
-
-    if relationship_update == 'yes' or relationship_update == 'y':
-        # display list of update types in console if user chooses to make updates          
-        for update_type, update in relationship_updates.get('update_types').items():            
-            print(f"{update_type}: {update}")        
-    else:
-        print("You chose not to make any other updates. ")
-        update_selection = 0
-        return game_table_id, relationship_id, update_selection
-
-    # make sure user only inters a valid entry, this time including 0 as an option
-    while True:
-        update_selection = input("What type of update would you like to make? ")
-
-        if 0 <= int(update_selection) <= len(relationship_updates.get('update_types')):
-            break
-        print("Please make a valid selection from the list. ")
-
-    # make the inputted string an integer
-    update_selection = int(update_selection)
-
-    if update_selection == 0:
-        print(f"Cancelled update for {actual_title}. ")
-        return game_table_id, relationship_id, update_selection
-    else:
-        return game_table_id, relationship_id, update_selection
     
 def game_ownership(game_table_id: int, relationship_id: int):
     conn = get_conn()

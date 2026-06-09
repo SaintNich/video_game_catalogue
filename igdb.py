@@ -13,6 +13,7 @@ from config import (
   get_conn
 )
 from hltb import get_hltb_info, add_hltb_info
+from user_relationship import create_user_game_relationship
 
 header = create_header()
 
@@ -34,7 +35,7 @@ def igdb_search(igdb_id: int = None, web_input: str = None) -> list:
 
 def full_game_info(igdb_id: int, search_results = None):
   if search_results is None:  
-    srch_results = igdb_search(igdb_id)
+    srch_results = igdb_search(igdb_id=igdb_id)
     srch_result = srch_results[0]
     igdb_id = srch_result.get('id')
     
@@ -70,13 +71,13 @@ def game_import_to_sqlite(full_game_result):
       expansion_of
     ))
 
+    conn.commit()
+
     row_ids = conn.execute("""
     SELECT game_table_id
     FROM games
     WHERE igdb_id = ?
     """, (full_game_result.get('id'),)).fetchone()
-
-    conn.commit()
 
     # remove the list from the row_id
     row_id = row_ids[0]
@@ -145,10 +146,12 @@ def add_game_series(series_ids, row_id, release_place = '', timeline_place = '',
     return
 
   for series_id in series_ids:
+    print(series_id, series_ids)
     body = f"fields name, games; where id = {series_id}; sort id asc;"
     series_results = requests.post(IGDB_COLLECTIONS_ENDPOINT, headers = header, data = body).json()
+    
     series_result = series_results[0] if series_results[0] else series_results
-
+    print(series_result)
     conn.execute("""
       INSERT OR IGNORE INTO game_series (series_id, series_name)
       VALUES (?, ?)
@@ -287,32 +290,36 @@ def game_processing(igdb_id: int):
   tables = ['game_genres', 'game_platforms']
   columns = ['genre_id', 'platform_id']
   
-  full_game_result = full_game_info(igdb_id)
-  igdb_id = full_game_result.get('id')
-  row_id = game_import_to_sqlite(full_game_result)
-  tbl_ids = [full_game_result.get('genres'), full_game_result.get('platforms')]
-  inv_comp_ids = full_game_result.get('involved_companies')
-  series_ids = full_game_result.get('collections')
-  websites = full_game_result.get('websites')
-  age_ratings = full_game_result.get('age_ratings')
-  multi_ids = full_game_result.get('multiplayer_modes')
-  expansions = full_game_result.get('expansions')
+  result = full_game_info(igdb_id=igdb_id)
+  igdb_id = result.get('id')
+  row_id = game_import_to_sqlite(full_game_result=result)
+  tbl_ids = [result.get('genres'), result.get('platforms')]
+  inv_comp_ids = result.get('involved_companies')
+  series_ids = result.get('collections')
+  websites = result.get('websites')
+  age_ratings = result.get('age_ratings')
+  multi_ids = result.get('multiplayer_modes')
+  expansions = result.get('expansions')
   
-  add_game_genre_platform(row_id, tbl_ids, tables, columns)
-  add_game_series(series_ids, row_id)
-  add_game_websites(websites, row_id)
+  add_game_genre_platform(row_id=row_id, tbl_ids=tbl_ids, tables=tables, columns=columns)
+  add_game_series(series_ids=series_ids, row_id=row_id)
+  
+  if websites:
+    add_game_websites(websites=websites, row_id=row_id)
   
   if inv_comp_ids:
-    add_game_companies(row_id, inv_comp_ids)
+    add_game_companies(row_id=row_id, inv_comp_ids=inv_comp_ids)
 
   if age_ratings:
-    add_age_ratings(age_ratings, row_id)
+    add_age_ratings(age_ratings=age_ratings, row_id=row_id)
 
   if multi_ids:
-    add_multiplayer_modes(multi_ids)
+    add_multiplayer_modes(multi_ids=multi_ids)
   
   if expansions:
-    add_game_expansions(expansions)
+    add_game_expansions(expansions=expansions)
+
+  create_user_game_relationship(game_table_id=row_id)
 
   if series_ids:
     return row_id, series_ids
@@ -324,7 +331,7 @@ def main(igdb_id: int, series_ids: int = None):
 
   game_processing()
   if series_ids:
-    add_game_series(series_ids)
+    add_game_series(series_ids=series_ids)
 
 if __name__ == "__main__":
   main()

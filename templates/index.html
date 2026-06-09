@@ -29,7 +29,7 @@
         </tr>
         {% for row in catalog_table %}
         <tr>
-            <td>{{ row.title }}</td>
+            <td><a href="{{ url_for('game_details', game_table_id = row.game_table_id) }}">{{ row.title }}</a></td>
             <td>{{ row.release_date }}</td>
             <td>{{ row.expansion_of }}</td>
             <td>{{ row.series_name }}</td>

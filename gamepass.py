@@ -1,6 +1,7 @@
 import datetime as dt
 import requests
 from config import GAMEPASS_TIERS, GAMEPASS_PLATFORMS, catalog_of_ids_url, catalog_of_titles_url, get_conn
+from igdb import header, IGDB_GAMES_ENDPOINT, game_processing
 
 def create_bigId_string(sigl: str, platform: str, tier_code: str, url: str = catalog_of_ids_url) -> str:
     return url + 'id=' + sigl + '&language=en-us&market=US&platformContext=' + platform + '&subscriptionContext=' + tier_code
@@ -33,7 +34,7 @@ def create_master_set(consoles: dict) -> list:
 def add_to_gamepass_table(master_set: list):
     conn = get_conn()
     list_size = 100
-    print(type(master_set))
+    
     chunked_list = [master_set[i: i + list_size] for i in range(0, len(master_set), list_size)]
     for list in chunked_list:
         list_str = ','.join(list)
@@ -88,11 +89,58 @@ def update_with_tiers(consoles: dict):
     conn.commit()
     conn.close()
 
+def add_to_games_table():
+    conn = get_conn()
+
+    gamepass_items = conn.execute("""
+        SELECT gamepass_id, game_title
+        FROM gamepass_catalog
+    """).fetchall()
+
+    conn.close()
+
+    for gamepass_id, game_title in gamepass_items:
+        body = f"fields external_games.name, external_games.uid; search \"{game_title}\";"
+
+        search_results = requests.post(IGDB_GAMES_ENDPOINT, headers = header, data = body).json()
+
+        for search_result in search_results:
+            if search_result.get('external_games'):
+                for external_game in search_result.get('external_games'):
+                    conn = get_conn()
+    
+                    already_added = conn.execute("""
+                        SELECT gamepass_id FROM games WHERE gamepass_id = ?
+                    """, (gamepass_id, )).fetchone()
+
+                    conn.close()
+
+                    if already_added:
+                        continue
+
+                    if external_game.get('uid') == gamepass_id:
+                        igdb_id = search_result.get('id')
+                        
+                        conn = get_conn()
+
+                        if not conn.execute("""
+                            SELECT igdb_id FROM games WHERE igdb_id = ?
+                        """, (igdb_id, )).fetchone():
+                            game_processing(igdb_id)
+
+                        conn.execute("""
+                            UPDATE games SET gamepass_id = ? WHERE igdb_id = ?
+                        """, (gamepass_id, igdb_id))
+                            
+                        conn.commit()
+                        conn.close()
+
 def main():
     consoles = get_bigIds()
     master_set = create_master_set(consoles)
     add_to_gamepass_table(master_set)
     update_with_tiers(consoles)
+    add_to_games_table()
 
 if __name__ == '__main__':
     main()
