@@ -3,6 +3,12 @@
 
 </head>
 <body>
+    <a href="{{ url_for('index') }}">Main</a>   
+    <form method="POST" action="{{ url_for('game_details_form') }}">
+        <input type="hidden" name="game_table_id" value="{{ game_table_id }}">
+        <input type="hidden" name="platform_dict" value="{{ platform_dict }}">
+        <button type="submit">Update Game</button>
+    </form>
     <section>
         <h2>{{ core_game_dict.game_title }}</h2>
         <p>Original Release Date: {{ core_game_dict.release_date }}</p>
@@ -21,7 +27,7 @@
     </section>
     <section>
         <h3>Current Catalog Status</h3>
-        <p>{{ relationship_dict.catalog_status }}</p>
+        <p>{{ relationship_dict.catalog_status.title()|replace('_',' ') }}</p>
     </section>
     <section>
         {% if relationship_dict.hours_played or relationship_dict.date_main_completed or relationship_dict.date_completed %}
@@ -71,6 +77,22 @@
             <li>{{ platform.platform }}</li>
             {% endfor %}
         </ul>
+        {% if user_platform_own_dict %}
+        <h4>Owned On:</h4>
+        <ul>
+            {% for platform in user_platform_own_dict %}
+            <li>{{ platform.owned }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+        {% if user_played_on_dict %}
+        <h4>Played On:</h4>
+        <ul>
+            {% for platform in user_played_on_dict %}
+            <li>{{ platform.played }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
     </section>
     <section>
         <h3>Genres</h3>

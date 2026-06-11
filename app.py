@@ -230,11 +230,9 @@ def steam_search():
     else:
         return redirect(url_for('index'))
     
-@app.route('/gamepass_update', methods = ['GET', 'POST'])
+@app.route('/gamepass_update', methods=['GET', 'POST'])
 def gamepass_update():
     if request.method == 'POST':
-        conn = get_conn()
-
         consoles = get_bigIds()
         master_set = create_master_set(consoles)
         add_to_gamepass_table(master_set)
@@ -253,7 +251,11 @@ def game_details(game_table_id):
         SELECT 
             g.title, 
             g.release_date, 
-            g.controller_supported, 
+            CASE
+                WHEN g.controller_supported = 1 THEN 'Controller Supported'
+                WHEN g.controller_supported = 0 THEN 'Controller Not Supported'
+                ELSE NULL
+            END AS controller_supported, 
             p.title AS expansion_of
         FROM games g
         LEFT JOIN games p
@@ -365,6 +367,36 @@ def game_details(game_table_id):
         WHERE g.game_table_id = ?
     """, (game_table_id, )).fetchall()
 
+    user_platform_own_info = conn.execute("""
+        SELECT p.platform
+        FROM platforms p
+        JOIN game_platforms g
+        ON p.platform_id = g.platform_id
+        JOIN user_platform_own u
+        ON p.platform_id = u.platform_id
+        AND u.relationship_id = (
+            SELECT relationship_id
+            FROM user_game_relationship
+            WHERE game_table_id = ?
+        )
+        WHERE g.game_table_id = ?
+    """, (game_table_id, game_table_id)).fetchall()
+
+    user_played_on_info = conn.execute("""
+        SELECT p.platform
+        FROM platforms p
+        JOIN game_platforms g
+        ON p.platform_id = g.platform_id
+        JOIN user_played_on u
+        ON p.platform_id = u.platform_id
+        AND u.relationship_id = (
+            SELECT relationship_id
+            FROM user_game_relationship
+            WHERE game_table_id = ?
+        )
+        WHERE g.game_table_id = ?
+    """, (game_table_id, game_table_id)).fetchall()
+
     conn.close()
 
     core_game_dict = {
@@ -443,8 +475,23 @@ def game_details(game_table_id):
     else:
         multiplayer_dict = None
 
+    if user_platform_own_info:
+        user_platform_own_dict = [{
+            'owned': row[0]
+        } for row in user_platform_own_info]
+    else:
+        user_platform_own_dict = None
+
+    if user_played_on_info:
+        user_played_on_dict = [{
+            'played': row[0]
+        } for row in user_played_on_info]
+    else:
+        user_played_on_dict = None
+
     return render_template(
         'game_details.html',
+        game_table_id=game_table_id,
         core_game_dict=core_game_dict,
         relationship_dict=relationship_dict,
         series_dict=series_dict,
@@ -454,5 +501,164 @@ def game_details(game_table_id):
         website_dict=website_dict,
         hltb_dict=hltb_dict,
         age_ratings_dict=age_ratings_dict,
-        multiplayer_dict=multiplayer_dict
+        multiplayer_dict=multiplayer_dict,
+        user_platform_own_dict=user_platform_own_dict,
+        user_played_on_dict=user_played_on_dict,
     )
+
+@app.route('/game_details_form', methods=['GET','POST'])
+def game_details_form():
+    if request.method == 'POST':
+        game_table_id = int(request.form['game_table_id'])
+        platform_dict = ast.literal_eval(request.form['platform_dict'])
+
+        conn = get_conn()
+
+        cur_relationship_values = conn.execute("""
+            SELECT
+                catalog_status,
+                date_main_completed,
+                date_completed,
+                hours_played,
+                rating,
+                user_notes
+            FROM user_game_relationship
+            WHERE game_table_id = ?
+        """, (game_table_id, )).fetchone()
+
+        cur_relationship_values = {
+            'catalog_status': cur_relationship_values[0],
+            'date_main_completed': cur_relationship_values[1],
+            'date_completed': cur_relationship_values[2],
+            'hours_played': cur_relationship_values[3],
+            'rating': cur_relationship_values[4],
+            'user_notes': cur_relationship_values[5]
+        }
+
+        ownership_values = conn.execute("""
+            SELECT
+                p.platform,
+                upo.relationship_id
+            FROM game_platforms gp
+            LEFT JOIN user_platform_own upo
+            ON gp.platform_id = upo.platform_id
+            AND upo.relationship_id = (
+                SELECT relationship_id
+                FROM user_game_relationship
+                WHERE game_table_id =?                            
+            )
+            JOIN platforms p
+            ON p.platform_id = gp.platform_id
+            WHERE gp.game_table_id = ?
+        """, (game_table_id, game_table_id)).fetchall()
+
+        ownership_values = [{
+            'platform': value[0],
+            'owned': True if value[1] else False
+        } for value in ownership_values]
+
+        played_on_values = conn.execute("""
+            SELECT
+                p.platform,
+                upo.relationship_id
+            FROM game_platforms gp
+            LEFT JOIN user_played_on upo
+            ON gp.platform_id = upo.platform_id
+            AND upo.relationship_id = (
+                SELECT relationship_id
+                FROM user_game_relationship
+                WHERE game_table_id =?                            
+            )
+            JOIN platforms p
+            ON p.platform_id = gp.platform_id
+            WHERE gp.game_table_id = ?
+        """, (game_table_id, game_table_id)).fetchall()
+
+        played_on_values = [{
+            'platform': value[0],
+            'played': True if value[1] else False
+        } for value in played_on_values]
+
+        conn.close()
+
+        return render_template(
+            'update_game.html', 
+            game_table_id=game_table_id, 
+            platform_dict=platform_dict,
+            cur_relationship_values=cur_relationship_values,
+            ownership_values=ownership_values,
+            played_on_values=played_on_values
+        )
+    
+@app.route('/update_game_details', methods=['GET','POST'])
+def update_game_details():
+    if request.method == 'POST':
+        conn = get_conn()
+        
+        game_table_id = int(request.form['game_table_id'])
+        catalog_update = request.form['catalog_status']
+        date_main_update = request.form['date_main']
+        date_full_update = request.form['date_full']
+        hours_update = float(request.form['hours_played']) if request.form['hours_played'] else None
+        rating_update = float(request.form['rating']) if request.form['rating'] else None
+        notes_update = request.form['user_notes']
+        owned_platforms = request.form.getlist('owned_platform')
+        played_platforms = request.form.getlist('played_platform')
+        controller_support = int(request.form['controller_support']) if request.form['controller_support'] else None
+        
+        conn.execute("""
+            UPDATE user_game_relationship
+            SET
+                catalog_status = ?,
+                date_main_completed = ?,
+                date_completed = ?,
+                hours_played = ?,
+                rating = ?,
+                user_notes = ?
+            WHERE game_table_id = ?
+        """, (
+            catalog_update,
+            date_main_update,
+            date_full_update,
+            hours_update,
+            rating_update,
+            notes_update,
+            game_table_id
+        ))
+
+        user_game_rel_id = conn.execute("""
+            SELECT relationship_id
+            FROM user_game_relationship
+            WHERE game_table_id = ?
+        """, (game_table_id, )).fetchone()
+
+        for platform in owned_platforms:
+            conn.execute("""
+                INSERT OR IGNORE INTO user_platform_own (relationship_id, platform_id)
+                VALUES (?, (
+                        SELECT platform_id
+                        FROM platforms
+                        WHERE platform = ?
+                    ))
+            """, (user_game_rel_id[0], platform))
+
+        for platform in played_platforms:
+            conn.execute("""
+                INSERT OR IGNORE INTO user_played_on (relationship_id, platform_id, game_hours)
+                VALUES (?, (
+                        SELECT platform_id
+                        FROM platforms
+                        WHERE platform = ?
+                    ), ?)
+            """, (user_game_rel_id[0], platform, hours_update))
+
+        conn.execute("""
+            UPDATE games
+            SET controller_supported = ?
+            WHERE game_table_id = ?
+        """, (controller_support, game_table_id))
+
+        conn.commit()
+        conn.close()
+
+        return redirect(url_for('game_details', game_table_id=game_table_id))

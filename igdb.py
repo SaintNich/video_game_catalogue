@@ -146,12 +146,11 @@ def add_game_series(series_ids, row_id, release_place = '', timeline_place = '',
     return
 
   for series_id in series_ids:
-    print(series_id, series_ids)
     body = f"fields name, games; where id = {series_id}; sort id asc;"
     series_results = requests.post(IGDB_COLLECTIONS_ENDPOINT, headers = header, data = body).json()
     
     series_result = series_results[0] if series_results[0] else series_results
-    print(series_result)
+
     conn.execute("""
       INSERT OR IGNORE INTO game_series (series_id, series_name)
       VALUES (?, ?)
