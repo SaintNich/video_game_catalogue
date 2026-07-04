@@ -3,12 +3,8 @@
 
 </head>
 <body>
-    <form method="POST", action="{{ url_for('processing_series') }}">
-        <input type="text" name="series_release" placeholder="In this series, what place was this game released?">
-        <input type="text" name="series_timeline" placeholder="In this series, what place is this game according to timeline?">
-        <input type="text" name="series_total" placeholder="How many games are there in this series?">
+    <form method="POST", action="{{ url_for('processing') }}">
         <input type="hidden" name="game_table_id" value="{{ game_table_id }}">
-        <input type="hidden" name="series_ids" value="{{ series_ids }}">
 
         <label for="hltb_selection">Choose which game to get the HowLongToBeat data for:</label>
             <select name="hltb_selection">

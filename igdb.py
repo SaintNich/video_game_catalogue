@@ -1,336 +1,630 @@
 import datetime as dt
-import requests
-from access_token import create_header
-from config import (
-  IGDB_GAMES_ENDPOINT,
-  IGDB_COMPANIES_ENDPOINT,
-  IGDB_INVOLVED_COMPANIES_ENDPOINT,
-  IGDB_COLLECTIONS_ENDPOINT,
-  IGDB_MULTIPLAYER_ENDPOINT,
-  IGDB_WEBSITE_ENDPOINT,
-  IGDB_AGE_RATINGS_ENDPOINT,
-  ESRB_RATING_ID,
-  get_conn
-)
-from hltb import get_hltb_info, add_hltb_info
-from user_relationship import create_user_game_relationship
+import json
+import logging
+import sqlite3
 
+import requests
+
+from access_token import create_header
+from config import IGDB_GAMES_ENDPOINT, get_conn
+
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+
+log = logging.getLogger(__name__)
 header = create_header()
 
+
 def igdb_search(igdb_id: int = None, web_input: str = None) -> list:
-  # checking if igdb_id was passed
-  if igdb_id is None:
-    title_search = web_input
-  
-    # string for "APIcalypse" format, limited to 50
-    body = f"fields name, first_release_date; search \"{title_search}\"; limit 50;"
-    search_results = requests.post(IGDB_GAMES_ENDPOINT, headers = header, data = body).json()
+    try:
+        if igdb_id is None:
+            title_search = web_input
+            log.info(f"IGDB search beginning for game title: {title_search}")
 
-  else:
-    # string to search by igdb_id
-    body = f"fields name, first_release_date; where id = {igdb_id}; sort id asc;"
-    search_results = requests.post(IGDB_GAMES_ENDPOINT, headers = header, data = body).json()
+            body = (
+                f'fields name, first_release_date; search "{title_search}"; limit 50;'
+            )
+            response = requests.post(IGDB_GAMES_ENDPOINT, headers=header, data=body)
 
-  return search_results
+        else:
+            log.info(f"IGDB search beginning for IGDB ID# {igdb_id}")
 
-def full_game_info(igdb_id: int, search_results = None):
-  if search_results is None:  
-    srch_results = igdb_search(igdb_id=igdb_id)
-    srch_result = srch_results[0]
-    igdb_id = srch_result.get('id')
-    
-  body = f"fields name, first_release_date, genres, platforms, involved_companies, collections, multiplayer_modes, parent_game, expansions, websites, age_ratings; where id = {igdb_id}; sort id asc;"
-  full_game_results = requests.post(IGDB_GAMES_ENDPOINT, headers = header, data = body).json()
-  
-  # remove the confirmed result from the list
-  full_game_result = full_game_results[0]
-  
-  return full_game_result 
-  
-def game_import_to_sqlite(full_game_result):
-  conn = get_conn()
+            body = (
+                f"fields name, first_release_date; where id = {igdb_id}; sort id asc;"
+            )
+            response = requests.post(IGDB_GAMES_ENDPOINT, headers=header, data=body)
 
-  try:
-    parent_id = full_game_result.get('parent_game')
+        log.debug(
+            f"Response Status Code: {response.status_code} | URL: {response.url} | Time: {response.elapsed.total_seconds()}s | Body Preview: {response.text[:200]}"
+        )
+        response.raise_for_status()
+        search_results = response.json()
 
-    if parent_id:
-      parent_row = conn.execute("""
-        SELECT game_table_id FROM games WHERE igdb_id = ?
-      """, (parent_id,)).fetchone()
-      expansion_of = parent_row[0] if parent_row else None
+    except requests.RequestException as e:
+        log.error(f"IGDB request failed: {type(e).__name__}: {e}")
+        return []
+
+    except json.JSONDecodeError as e:
+        log.error(f"JSON Decoding failed: {e}")
+        return []
+
     else:
-      expansion_of = None
+        log.info(
+            f"IGDB search completed successfully. Number of results received: {len(search_results)}"
+        )
+        return search_results
 
-    conn.execute("""
-      INSERT OR IGNORE INTO games (igdb_id, title, release_date, expansion_of)
-      VALUES (?, ?, ?, ?)
-    """, (
-      full_game_result.get('id'),
-      full_game_result.get('name'),
-      dt.datetime.fromtimestamp(full_game_result.get('first_release_date')).date().isoformat() if full_game_result.get('first_release_date') else 'unknown',
-      expansion_of
-    ))
 
-    conn.commit()
+def full_game_info(igdb_id: int, search_results: list = None) -> dict:
+    try:
+        if search_results is None:
+            srch_results = igdb_search(igdb_id=igdb_id)
 
-    row_ids = conn.execute("""
-    SELECT game_table_id
-    FROM games
-    WHERE igdb_id = ?
-    """, (full_game_result.get('id'),)).fetchone()
+            if srch_results:
+                srch_result = srch_results[0]
+                igdb_id = srch_result.get("id")
+            else:
+                log.warning(
+                    "igdb_search() returned an empty list, srch_results not available."
+                )
+                return {}
 
-    # remove the list from the row_id
-    row_id = row_ids[0]
+        body = f"fields age_ratings.synopsis, age_ratings.organization.name, age_ratings.rating_category.rating, age_ratings.rating_content_descriptions.description, alternative_names.name, artworks.image_id, artworks.url, collections.games.name, collections.name, cover.image_id, cover.url, dlcs.name, expanded_games.name, expansions.name, external_games.name, external_games.uid, external_games.external_game_source.name, first_release_date, forks.name, game_modes.slug, game_status.status, game_type.type, genres.slug, involved_companies.company.name, involved_companies.developer, involved_companies.porting, involved_companies.publisher, involved_companies.supporting, multiplayer_modes.campaigncoop, multiplayer_modes.dropin, multiplayer_modes.lancoop, multiplayer_modes.offlinecoop, multiplayer_modes.offlinemax, multiplayer_modes.onlinecoop, multiplayer_modes.onlinemax, multiplayer_modes.splitscreen, name, parent_game.name, platforms.abbreviation, platforms.alternative_name, platforms.name, remakes.name, remasters.name, standalone_expansions.name, storyline, summary, themes.slug, version_parent.name, version_title, websites.url, websites.type.type; where id = {igdb_id}; sort id asc;"
 
-    return row_id
+        response = requests.post(IGDB_GAMES_ENDPOINT, headers=header, data=body)
+        log.debug(
+            f"Response Status Code: {response.status_code} | URL: {response.url} | Time: {response.elapsed.total_seconds()}s | Body Preview: {response.text[:200]}"
+        )
+        response.raise_for_status()
+        full_game_results = response.json()
 
-  finally:
-    conn.close()
+    except requests.RequestException as e:
+        log.error(f"IGDB request failed: {type(e).__name__}: {e}")
+        return {}
 
-def add_game_genre_platform(row_id, tbl_ids, tables, columns):
-  conn = get_conn()
-  
-  try:
-    for ids, column, table in zip(tbl_ids, columns, tables):
-      for id in ids:
-        conn.execute(f"""
-          INSERT OR IGNORE INTO {table} (game_table_id, {column})
-          VALUES (?, ?)
-        """, (row_id, id))
+    except json.JSONDecodeError as e:
+        log.error(f"JSON Decoding failed: {e}")
+        return {}
 
-    conn.commit()
-  
-  finally:
-    conn.close()
+    else:
+        full_game_result = full_game_results[0]
+        log.info("IGDB full game info pulled successfully.")
+        return full_game_result
 
-def add_game_companies(row_id, inv_comp_ids):
-  conn = get_conn()
 
-  for inv_comp_id in inv_comp_ids:
-    first_body = f"fields company, developer, publisher; where id = {inv_comp_id}; sort id asc;"
-    inv_comp_results = requests.post(IGDB_INVOLVED_COMPANIES_ENDPOINT, headers = header, data = first_body).json()
-    inv_comp_result = inv_comp_results[0]
-    company = inv_comp_result.get('company')
-    developer = int(inv_comp_result.get('developer', False))
-    publisher = int(inv_comp_result.get('publisher', False))
-    
-    second_body = f"fields name; where id = {company}; sort id asc;"
-    comp_results = requests.post(IGDB_COMPANIES_ENDPOINT, headers = header, data = second_body).json()
-    comp_result = comp_results[0]
-    
-    conn.execute("""
-      INSERT OR IGNORE INTO companies (company_id, company)
-      VALUES (?, ?)             
-    """, (
-        comp_result.get('id'),
-        comp_result.get('name')
-    ))
+def update_games(full_game_result: dict) -> int:
+    conn = get_conn()
 
-    conn.execute("""
-      INSERT OR IGNORE INTO game_involved_companies (game_table_id, company_id, is_developer, is_publisher)
-      VALUES (?, ?, ?, ?)
-    """, (
-      row_id,
-      comp_result.get('id'),
-      developer,
-      publisher
-    ))
-    
-  conn.commit()
-  conn.close()
-      
-def add_game_series(series_ids, row_id, release_place = '', timeline_place = '', total_games_in_series = ''):
-  conn = get_conn()
+    try:
+        igdb_id = full_game_result.get("id")
+        title = full_game_result.get("name")
+        alt_titles = (
+            [name.get("name") for name in full_game_result.get("alternative_names")]
+            if full_game_result.get("alternative_names")
+            else None
+        )
+        cover = (
+            full_game_result.get("cover").get("url")
+            if full_game_result.get("cover")
+            else None
+        )
+        img_urls = (
+            [art.get("url") for art in full_game_result.get("artworks")]
+            if full_game_result.get("artworks")
+            else None
+        )
+        summary = full_game_result.get("summary")
+        story = full_game_result.get("storyline")
+        release_date = full_game_result.get("first_release_date")
+        game_type = (
+            full_game_result.get("game_type").get("type")
+            if full_game_result.get("game_type")
+            else None
+        )
+        game_modes = (
+            [mode.get("slug") for mode in full_game_result.get("game_modes")]
+            if full_game_result.get("game_modes")
+            else None
+        )
+        genres = (
+            [genre.get("slug") for genre in full_game_result.get("genres")]
+            if full_game_result.get("genres")
+            else None
+        )
+        themes = (
+            [theme.get("slug") for theme in full_game_result.get("themes")]
+            if full_game_result.get("themes")
+            else None
+        )
+        expansion_of = (
+            full_game_result.get("parent_game").get("name")
+            if full_game_result.get("parent_game")
+            else None
+        )
 
-  if series_ids is None:
-    return
+        if full_game_result.get("age_ratings"):
+            for rating in full_game_result.get("age_ratings"):
+                rating_org = (
+                    rating.get("organization").get("name")
+                    if rating.get("organization")
+                    else None
+                )
+                if rating_org != "ESRB":
+                    continue
 
-  for series_id in series_ids:
-    body = f"fields name, games; where id = {series_id}; sort id asc;"
-    series_results = requests.post(IGDB_COLLECTIONS_ENDPOINT, headers = header, data = body).json()
-    
-    series_result = series_results[0] if series_results[0] else series_results
+                rating_cat = (
+                    rating.get("rating_category").get("rating")
+                    if rating.get("rating_category")
+                    else None
+                )
+                rating_desc = (
+                    [
+                        desc.get("description")
+                        for desc in rating.get("rating_content_descriptions")
+                    ]
+                    if rating.get("rating_content_descriptions")
+                    else []
+                )
 
-    conn.execute("""
-      INSERT OR IGNORE INTO game_series (series_id, series_name)
-      VALUES (?, ?)
-    """, (
-      series_result.get('id'),
-      series_result.get('name'),
-    ))
-      
-    if release_place == '':
-      release_place = None
-      break
-      
-    if timeline_place == '':
-      timeline_place = None
-      break
-
-    if total_games_in_series == '':
-      total_games_in_series = None
-      break
-
-    conn.execute("""
-      INSERT OR IGNORE INTO game_series_link (game_table_id, series_id, place_in_series_release, place_in_series_timeline, total_games_in_series)
-      VALUES (?, ?, ?, ?, ?)
-    """, (
-      row_id,
-      series_result.get('id'),
-      release_place,
-      timeline_place,
-      total_games_in_series
-    ))
-
-  conn.commit()
-  conn.close()
-
-def add_multiplayer_modes(multi_ids):
-  conn = get_conn()
-
-  for multi_id in multi_ids:
-    body = f"fields game, platform, campaigncoop, dropin, lancoop, offlinecoop, onlinecoop, splitscreen, splitscreenonline, offlinemax, onlinemax; where id = {multi_id}; sort id asc;"
-    multiplayer_results = requests.post(IGDB_MULTIPLAYER_ENDPOINT, headers = header, data = body).json()
-    multiplayer_result = multiplayer_results[0]
- 
-    conn.execute("""
-      INSERT OR IGNORE INTO multiplayer_modes (
-        multiplayer_id,
-        igdb_id,
-        platform_id,
-        campaigncoop,
-        dropin,
-        lancoop,
-        offlinecoop,
-        onlinecoop,         
-        splitscreen,
-        splitscreenonline,
-        offlinemax,
-        onlinemax
+        conn.execute(
+            """
+      INSERT OR IGNORE INTO games (
+        igdb_id, 
+        title,
+        alt_titles,
+        cover_url,
+        images,
+        summary,
+        story,
+        release_date,
+        game_type,
+        game_modes,
+        genres,
+        themes,
+        expansion_of,
+        age_rating_org,
+        age_rating_cat,
+        age_rating_desc
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """, (
-      multiplayer_result.get('id'),
-      multiplayer_result.get('game'),
-      multiplayer_result.get('platform'),
-      int(multiplayer_result.get('campaigncoop')) if multiplayer_result.get('campaigncoop') else None,
-      int(multiplayer_result.get('dropin')) if multiplayer_result.get('dropin') else None,
-      int(multiplayer_result.get('lancoop')) if multiplayer_result.get('lancoop') else None,
-      int(multiplayer_result.get('offlinecoop')) if multiplayer_result.get('offlinecoop') else None,
-      int(multiplayer_result.get('onlinecoop')) if multiplayer_result.get('onlinecoop') else None,
-      int(multiplayer_result.get('splitscreen')) if multiplayer_result.get('splitscreen') else None,
-      int(multiplayer_result.get('splitscreenonline')) if multiplayer_result.get('splitscreenonline') else None,
-      multiplayer_result.get('offlinemax'),
-      multiplayer_result.get('onlinemax')
-    ))
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """,
+            (
+                igdb_id,
+                title,
+                ", ".join(alt_titles) if alt_titles else None,
+                cover,
+                ", ".join(img_urls) if img_urls else None,
+                summary,
+                story,
+                dt.datetime.fromtimestamp(release_date).date().isoformat()
+                if release_date
+                else "unknown",
+                game_type,
+                ", ".join(game_modes) if game_modes else None,
+                ", ".join(genres) if genres else None,
+                ", ".join(themes) if themes else None,
+                expansion_of,
+                rating_org if rating_org else None,
+                rating_cat if rating_cat else None,
+                ", ".join(rating_desc) if rating_desc else None,
+            ),
+        )
+        conn.commit()
 
-  conn.commit()
-  conn.close()
+        game_table_ids = conn.execute(
+            """
+      SELECT game_table_id
+      FROM games
+      WHERE igdb_id = ?
+      """,
+            (full_game_result.get("id"),),
+        ).fetchone()
 
-def add_game_websites(websites, row_id):
-  conn = get_conn()
-  
-  for website in websites:
-    body = f"fields game, type, url; where id = {website}; sort id asc;"
-    site_results = requests.post(IGDB_WEBSITE_ENDPOINT, headers = header, data = body).json()
-    site_result = site_results[0]
+    except sqlite3.Error as e:
+        log.error(f"An operation to the games table failed: {type(e).__name__}: {e}")
+        return None
 
-    conn.execute("""
-      INSERT OR IGNORE INTO game_websites (
-        game_table_id,
-        website_id,
-        website_type_id,
-        website_url
-      )
-      VALUES (?, ?, ?, ?)
-    """, (
-      row_id,
-      site_result.get('id'),
-      site_result.get('type'),
-      site_result.get('url')
-    ))
+    else:
+        game_table_id = game_table_ids[0]
+        log.info(f"Update to games table successful. Game table ID#: {game_table_id}")
+        return game_table_id
 
-  conn.commit()
-  conn.close()
+    finally:
+        conn.close()
 
-def add_age_ratings(age_ratings, row_id):
-  conn = get_conn()
 
-  for rating in age_ratings:
-    body = f"fields rating_category, rating_content_descriptions; where organization = {ESRB_RATING_ID} & id = {rating}; sort id asc;"
-    rating_results = requests.post(IGDB_AGE_RATINGS_ENDPOINT, headers = header, data = body).json()
+def update_multiplayer(game_table_id: int, full_game_result: dict):
+    conn = get_conn()
+    try:
+        multiplayer = full_game_result.get("multiplayer_modes")
 
-    if not rating_results:
-      continue
+        if multiplayer:
+            log.info("Multiplayer information obtained.")
+            multiplayer = multiplayer[0]
+            conn.execute(
+                """
+        INSERT OR IGNORE INTO multiplayer_modes (
+          game_table_id, 
+          campaigncoop, 
+          dropin, 
+          lancoop, 
+          offlinecoop,
+          onlinecoop,
+          splitscreen,
+          splitscreenonline,
+          offlinemax,
+          onlinemax
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      """,
+                (
+                    game_table_id,
+                    multiplayer.get("campaigncoop"),
+                    multiplayer.get("dropin"),
+                    multiplayer.get("lancoop"),
+                    multiplayer.get("offlinecoop"),
+                    multiplayer.get("onlinecoop"),
+                    multiplayer.get("splitscreen"),
+                    multiplayer.get("splitscreenonline"),
+                    multiplayer.get("offlinemax"),
+                    multiplayer.get("onlinemax"),
+                ),
+            )
+            conn.commit()
+        else:
+            log.info("Multiplayer information not available.")
+            return
 
-    rating_result = rating_results[0]
+    except sqlite3.Error as e:
+        log.error(
+            f"An operation to the multiplayer_modes table failed: {type(e).__name__}: {e}"
+        )
+        return None
 
-    description_ids = rating_result.get('rating_content_descriptions') or []
-    
-    for description_id in description_ids:
-      conn.execute("""
-        INSERT OR IGNORE INTO game_ratings (game_table_id, age_rating_id, category_id, description_id)
-        VALUES (?, ?, ?, ?)
-      """, (
-        row_id,
-        rating_result.get('id'),
-        rating_result.get('rating_category'),
-        description_id
-      ))
-    
-  conn.commit()
-  conn.close()
+    else:
+        log.info("Update to multiplayer_modes table successful.")
+        return
 
-def add_game_expansions(expansions):
-  for expansion in expansions:
-    game_processing(expansion)
+    finally:
+        conn.close()
 
-def game_processing(igdb_id: int): 
-  tables = ['game_genres', 'game_platforms']
-  columns = ['genre_id', 'platform_id']
-  
-  result = full_game_info(igdb_id=igdb_id)
-  igdb_id = result.get('id')
-  row_id = game_import_to_sqlite(full_game_result=result)
-  tbl_ids = [result.get('genres'), result.get('platforms')]
-  inv_comp_ids = result.get('involved_companies')
-  series_ids = result.get('collections')
-  websites = result.get('websites')
-  age_ratings = result.get('age_ratings')
-  multi_ids = result.get('multiplayer_modes')
-  expansions = result.get('expansions')
-  
-  add_game_genre_platform(row_id=row_id, tbl_ids=tbl_ids, tables=tables, columns=columns)
-  add_game_series(series_ids=series_ids, row_id=row_id)
-  
-  if websites:
-    add_game_websites(websites=websites, row_id=row_id)
-  
-  if inv_comp_ids:
-    add_game_companies(row_id=row_id, inv_comp_ids=inv_comp_ids)
 
-  if age_ratings:
-    add_age_ratings(age_ratings=age_ratings, row_id=row_id)
+def update_external_sources(game_table_id: int, full_game_result: dict):
+    conn = get_conn()
 
-  if multi_ids:
-    add_multiplayer_modes(multi_ids=multi_ids)
-  
-  if expansions:
-    add_game_expansions(expansions=expansions)
+    try:
+        if full_game_result.get("external_games"):
+            log.info("External game source information obtained.")
+            ext_sources = [
+                {
+                    "ext_uid": ext_game.get("uid"),
+                    "ext_source": ext_game.get("external_game_source").get("name")
+                    if ext_game.get("external_game_source")
+                    else None,
+                }
+                for ext_game in full_game_result.get("external_games")
+            ]
+        else:
+            ext_sources = None
 
-  create_user_game_relationship(game_table_id=row_id)
+        if ext_sources:
+            for src in ext_sources:
+                conn.execute(
+                    """
+          INSERT OR IGNORE INTO external_sources (
+            game_table_id, ext_src, ext_src_uid           
+          )
+          VALUES (?, ?, ?)
+        """,
+                    (game_table_id, src.get("ext_source"), src.get("ext_uid")),
+                )
+        else:
+            log.warning("External sources information not available.")
+            return
 
-  if series_ids:
-    return row_id, series_ids
-  
-  return row_id
-  
-def main(igdb_id: int, series_ids: int = None):
-  search_results = igdb_search()
+    except sqlite3.Error as e:
+        log.error(
+            f"An operation to the external_sources table failed: {type(e).__name__}: {e}"
+        )
+        conn.rollback()
+        return
 
-  game_processing()
-  if series_ids:
-    add_game_series(series_ids=series_ids)
+    except Exception as e:
+        log.error(
+            f"An unexpected error occurred in update_external_sources(). {type(e).__name__}: {e}"
+        )
+        conn.rollback()
+        return
 
-if __name__ == "__main__":
-  main()
+    else:
+        log.info("Update to external_sources table successful")
+        conn.commit()
+
+    finally:
+        conn.close()
+
+
+def update_game_involved_companies(game_table_id: int, full_game_result: dict):
+    conn = get_conn()
+
+    try:
+        if full_game_result.get("involved_companies"):
+            log.info("Game involved company information obtained.")
+            inv_comps = [
+                {
+                    "company_name": company.get("company").get("name")
+                    if company.get("company")
+                    else None,
+                    "developer": company.get("developer"),
+                    "porting": company.get("porting"),
+                    "publisher": company.get("publisher"),
+                    "supporting": company.get("supporting"),
+                }
+                for company in full_game_result.get("involved_companies")
+            ]
+        else:
+            inv_comps = None
+
+        if inv_comps:
+            for co in inv_comps:
+                conn.execute(
+                    """
+          INSERT OR IGNORE INTO game_involved_companies (
+            game_table_id,
+            company,
+            is_developer,
+            is_porting,
+            is_publisher,
+            is_supporting           
+          )
+          VALUES (?, ?, ?, ?, ?, ?)
+        """,
+                    (
+                        game_table_id,
+                        co.get("company_name"),
+                        co.get("developer"),
+                        co.get("porting"),
+                        co.get("publisher"),
+                        co.get("supporting"),
+                    ),
+                )
+        else:
+            log.warning("Involved companies not available.")
+            return
+
+    except sqlite3.Error as e:
+        log.error(
+            f"An operation with the game_involved_companies table failed: {type(e).__name__}: {e}"
+        )
+        conn.rollback()
+        return
+
+    except Exception as e:
+        log.error(
+            f"An unexpected error occurred in update_game_involved_companies(). {type(e).__name__}: {e}"
+        )
+        conn.rollback()
+        return
+
+    else:
+        log.info("Update to game_involved_companies table successful.")
+        conn.commit()
+
+    finally:
+        conn.close()
+
+
+def update_game_platforms(game_table_id: int, full_game_result: dict):
+    conn = get_conn()
+
+    try:
+        if full_game_result.get("platforms"):
+            log.info("Game platform information obtained.")
+            platforms = [
+                {
+                    "abbr": platform.get("abbreviation"),
+                    "name": platform.get("name"),
+                    "alt_name": platform.get("alternative_name"),
+                }
+                for platform in full_game_result.get("platforms")
+            ]
+        else:
+            platforms = None
+
+        if platforms:
+            for platform in platforms:
+                conn.execute(
+                    """
+          INSERT OR IGNORE INTO game_platforms (
+            game_table_id,
+            platform,
+            platform_abbr,
+            alt_platform_name           
+          )
+          VALUES (?, ?, ?, ?)
+        """,
+                    (
+                        game_table_id,
+                        platform.get("name"),
+                        platform.get("abbr"),
+                        platform.get("alt_name"),
+                    ),
+                )
+        else:
+            log.warning("Platform information not available.")
+            return
+
+    except sqlite3.Error as e:
+        log.error(
+            f"An operation to the game_platforms table failed: {type(e).__name__}: {e}"
+        )
+        conn.rollback()
+        return
+
+    except Exception as e:
+        log.error(
+            f"An unexpected error occurred in update_game_platforms(). {type(e).__name__}: {e}"
+        )
+        conn.rollback()
+        return
+
+    else:
+        log.info("Update to game_platforms table successful.")
+        conn.commit()
+
+    finally:
+        conn.close()
+
+
+def update_game_websites(game_table_id: int, full_game_result: dict):
+    conn = get_conn()
+
+    try:
+        if full_game_result.get("websites"):
+            log.info("Game website information obtained")
+            websites = [
+                {
+                    "type": website.get("type").get("type")
+                    if website.get("type")
+                    else None,
+                    "url": website.get("url"),
+                }
+                for website in full_game_result.get("websites")
+            ]
+        else:
+            websites = None
+
+        if websites:
+            for site in websites:
+                conn.execute(
+                    """
+          INSERT OR IGNORE INTO game_websites (
+            game_table_id,
+            website_type,
+            website_url
+          )
+          VALUES (?, ?, ?)
+        """,
+                    (game_table_id, site.get("type"), site.get("url")),
+                )
+        else:
+            log.warning("Website information not available.")
+            return
+
+    except sqlite3.Error as e:
+        log.error(
+            f"An operation to the game_websites table failed: {type(e).__name__}: {e}"
+        )
+        conn.rollback()
+        return
+
+    except Exception as e:
+        log.error(
+            f"An unexpected error occurred in update_game_websites(). {type(e).__name__}: {e}"
+        )
+        conn.rollback()
+        return
+
+    else:
+        log.info("Update to game_websites table successful.")
+        conn.commit()
+
+    finally:
+        conn.close()
+
+
+def update_game_series(game_table_id: int, full_game_result: dict):
+    conn = get_conn()
+
+    try:
+        if full_game_result.get("collections"):
+            log.info("Series information obtained.")
+            collections = [
+                {
+                    "collection_name": collection.get("name"),
+                    "games": [game.get("name") for game in collection.get("games")],
+                }
+                for collection in full_game_result.get("collections")
+            ]
+        else:
+            collections = None
+
+        if collections:
+            for collection in collections:
+                conn.execute(
+                    """
+          INSERT OR IGNORE INTO game_series (
+            game_table_id,
+            series,
+            total_games_in_series           
+          )
+          VALUES (?, ?, ?)
+        """,
+                    (
+                        game_table_id,
+                        collection.get("collection_name"),
+                        len(collection.get("games")),
+                    ),
+                )
+        else:
+            log.info("Series information not available or doesn't exist.")
+            return
+
+    except sqlite3.Error as e:
+        log.error(
+            f"An operation to the game_series table failed: {type(e).__name__}: {e}"
+        )
+        conn.rollback()
+        return
+
+    except Exception as e:
+        log.error(
+            f"An unexpected error occurred in update_game_series(). {type(e).__name__}: {e}"
+        )
+        conn.rollback()
+        return
+
+    else:
+        log.info("Update to game_series table successful.")
+        conn.commit()
+
+    finally:
+        conn.close()
+
+
+def game_processing(igdb_id: int) -> int:
+    full_game_result = full_game_info(igdb_id=igdb_id)
+
+    if full_game_result:
+        game_table_id = update_games(full_game_result=full_game_result)
+
+        if game_table_id:
+            update_multiplayer(
+                game_table_id=game_table_id, full_game_result=full_game_result
+            )
+            update_external_sources(
+                game_table_id=game_table_id, full_game_result=full_game_result
+            )
+            update_game_involved_companies(
+                game_table_id=game_table_id, full_game_result=full_game_result
+            )
+            update_game_platforms(
+                game_table_id=game_table_id, full_game_result=full_game_result
+            )
+            update_game_websites(
+                game_table_id=game_table_id, full_game_result=full_game_result
+            )
+            update_game_series(
+                game_table_id=game_table_id, full_game_result=full_game_result
+            )
+
+            return game_table_id
+        else:
+            log.warning("game_table_id not available.")
+            return None
+    else:
+        log.warning("full_game_result not available.")
+        return None

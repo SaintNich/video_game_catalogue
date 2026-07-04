@@ -1,99 +1,150 @@
-import datetime as dt
+import json
+import logging
 import os
+import sqlite3
+
 import requests
-from access_token import create_header
-from config import STEAM_ENDPOINT, IGDB_GAMES_ENDPOINT, get_conn
 from dotenv import load_dotenv
-from igdb import igdb_search, game_processing
+
+from config import STEAM_ENDPOINT, get_conn
+from user_relationship import create_user_game_relationship
+
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+
+log = logging.getLogger(__name__)
 
 load_dotenv()
-API_KEY = os.getenv('api_key')
-STEAM_ID = os.getenv('steam_id')
+API_KEY = os.getenv("api_key")
+STEAM_ID = os.getenv("steam_id")
+
 
 def get_steam_info() -> list:
-  steam_url = STEAM_ENDPOINT + '?key=' + API_KEY + '&steamid=' + STEAM_ID + '&include_appinfo=true&format=json'
-  steam_response = requests.get(steam_url).json()
-  steam_games = steam_response.get('response').get('games')
+    try:
+        steam_url = (
+            STEAM_ENDPOINT
+            + "?key="
+            + API_KEY
+            + "&steamid="
+            + STEAM_ID
+            + "&include_appinfo=true&format=json"
+        )
+        response = requests.get(steam_url)
 
-  return steam_games
+        log.debug(
+            f"Response Status Code: {response.status_code} | URL: {response.url} | Time: {response.elapsed.total_seconds()}s | Body Preview: {response.text[:200]}"
+        )
+        response.raise_for_status()
 
-def steam_selection_to_query(steam_game_name: str, steam_game: dict) -> int:
-  body = f"fields name, first_release_date; search \"{steam_game_name}\"; limit 50;"
-  steam_search_results = requests.post(IGDB_GAMES_ENDPOINT, headers = create_header(), data = body).json()
+        steam_response = response.json()
+        steam_games = (
+            steam_response.get("response").get("games")
+            if steam_response.get("response")
+            else None
+        )
 
-  print(f"Game to select: {steam_game_name}")
-  for i, result in enumerate(steam_search_results):
-    game_title = result.get('name')
-    release_year = dt.datetime.fromtimestamp(result.get('first_release_date')).year if result.get('first_release_date') else 'unknown'
-    igdb_id = result.get('id')
-    print(f"{i+1}. {game_title}, released in {release_year} [ID = {igdb_id}]")
+    except requests.RequestException as e:
+        log.error(f"Steam API request failed: {type(e).__name__}: {e}")
+        return []
 
-  try:
-    if steam_search_results:
-      while True:
-        steam_selection = input("Choose the correct game: ")
-        if 1 <= int(steam_selection) <= len(steam_search_results):
-          break
-        print("Be sure to choose a number in the list. ")
-      
-      choice = steam_search_results[int(steam_selection) - 1]
-      igdb_id = choice.get('id')
-      
-      return igdb_id
-    
+    except json.JSONDecodeError as e:
+        log.error(f"JSON Decoding failed: {e}")
+        return []
+
+    except Exception as e:
+        log.error(
+            f"Unknow error occurred getting steam information: {type(e).__name__}: {e}"
+        )
+        return []
+
     else:
-      print(f"No results for {steam_game_name}")
-  
-  except ValueError:
-    print("Please enter an integer. ")
-    return steam_selection_to_query(steam_game)
-  
+        if steam_games:
+            log.info("Steam API query successful")
+            return steam_games
+        else:
+            log.warning("Steam API query unsuccessful")
+            return []
+
+
 def check_if_steam_game_exists(steam_game_id: int) -> bool:
-  conn = get_conn()
+    conn = get_conn()
+    try:
+        is_steam_id_in_games = conn.execute(
+            """
+      SELECT steam_id FROM games
+      WHERE steam_id = ?
+    """,
+            (steam_game_id,),
+        ).fetchone()
 
-  is_steam_id_in_games = conn.execute("""
-    SELECT steam_id FROM games
-    WHERE steam_id = ?
-  """, (steam_game_id,)).fetchone()
-  
-  steam_id_in_games = is_steam_id_in_games[0] if is_steam_id_in_games else 0
+    except sqlite3.Error as e:
+        log.error(
+            f"Error occurred fetching Steam information from games table: {type(e).__name__}: {e}"
+        )
+        return None
 
-  if steam_id_in_games == steam_game_id:
-    return True
-  else:
-    return False
-
-def write_additional_steam_game_information (steam_game_id: int, igdb_id: int):
-  conn = get_conn()
-
-  conn.execute("""
-    UPDATE games SET steam_id = ?
-    WHERE igdb_id = ?
-  """, (
-    steam_game_id,
-    igdb_id
-  ))
-
-  conn.commit()
-  conn.close()
-
-def main():
-  steam_games = get_steam_info()
-
-  for steam_game in steam_games:
-    steam_game_name = steam_game.get('name')
-    steam_game_id = steam_game.get('appid')
-    steam_game_playtime = round((steam_game.get('playtime_forever') / 60), 2) # currently a placeholder for future use
-    igdb_id = steam_selection_to_query(steam_game_name, steam_game)
-    
-    if check_if_steam_game_exists(steam_game_id):
-      continue
     else:
-      if igdb_id is None:
-        search_results = igdb_search()
+        return bool(is_steam_id_in_games)
 
-      game_processing(igdb_id)  
-      write_additional_steam_game_information(steam_game_id, igdb_id)
+    finally:
+        conn.close()
 
-if __name__ == '__main__':
-  main()
+
+def write_additional_steam_game_information(
+    game_table_id: int, steam_game_id: int, playtime: float = 0.0
+):
+    conn = get_conn()
+    try:
+        conn.execute(
+            """
+      UPDATE games SET steam_id = ?
+      WHERE game_table_id = ?
+    """,
+            (steam_game_id, game_table_id),
+        )
+        conn.commit()
+
+    except sqlite3.Error as e:
+        log.error(f"An operation to the games table failed: {type(e).__name__}: {e}")
+        conn.rollback()
+        return
+
+    else:
+        log.info(
+            f"Steam ID updated in games table for game_table_id = {game_table_id}."
+        )
+        rel_check = create_user_game_relationship(
+            game_table_id=game_table_id, hours_played=playtime
+        )
+
+        if rel_check is None:
+            log.warning(
+                f"Steam ID updated but user_game_relationship update failed for game_table_id = {game_table_id}"
+            )
+
+    finally:
+        conn.close()
+
+
+# def main():
+#  steam_games = get_steam_info()
+#
+#  for steam_game in steam_games:
+#    steam_game_name = steam_game.get('name')
+#    steam_game_id = steam_game.get('appid')
+#    steam_game_playtime = round((steam_game.get('playtime_forever') / 60), 2) # currently a placeholder for future use
+#
+#    if check_if_steam_game_exists(steam_game_id):
+#      continue
+#    else:
+#      if igdb_id is None:
+#        search_results = igdb_search()
+#
+#      game_processing(igdb_id)
+#      write_additional_steam_game_information(steam_game_id, igdb_id)
+#
+# if __name__ == '__main__':
+#  main()

@@ -1,6 +1,7 @@
 .env
 venv/
 __pycache__/
+*.log
 *.pyc
 *.db
-text_query.py
+test_query.py

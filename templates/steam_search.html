@@ -1,11 +1,10 @@
-<!DOCTYPE html>
-<head>
-
-</head>
+<!doctype html>
+<head> </head>
 <body>
-    <form method="POST", action="{{ url_for('steam_search') }}">
-        <input type="text" name="steam_search" value="{{ steam_game_name }}">
-        <input type="hidden" name="steam_game_id" value="{{ steam_game_id }}">
-        <button type="submit">Search</button>
-    </form>
+	<form method="POST" , action="{{ url_for('steam_search') }}">
+		<input type="text" name="steam_search" value="{{ steam_game_name }}" />
+		<input type="hidden" name="steam_game_id" value="{{ steam_game_id }}" />
+		<input type="hidden" name="steam_game_playtime" value="{{ steam_game_playtime }}" />
+		<button type="submit">Search</button>
+	</form>
 </body>

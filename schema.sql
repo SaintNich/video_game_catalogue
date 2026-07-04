@@ -1,22 +1,28 @@
 CREATE TABLE IF NOT EXISTS games (
-  game_table_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  game_table_id INTEGER PRIMARY KEY,
   igdb_id INT UNIQUE,
   steam_id INT UNIQUE,
   gamepass_id TEXT UNIQUE,
   title TEXT NOT NULL,
+  alt_titles TEXT,
+  cover_url TEXT,
+  images TEXT,
+  summary TEXT,
+  story TEXT,
   release_date TEXT,
   controller_supported INT,
-  expansion_of INT,
-  FOREIGN KEY (expansion_of) REFERENCES games(game_table_id)
-);
-
-CREATE TABLE IF NOT EXISTS game_series (
-  series_id INT PRIMARY KEY,
-  series_name TEXT NOT NULL
+  game_type TEXT,
+  game_modes TEXT,
+  genres TEXT,
+  themes TEXT,
+  age_rating_org TEXT,
+  age_rating_cat TEXT,
+  age_rating_desc TEXT,
+  expansion_of TEXT
 );
 
 CREATE TABLE IF NOT EXISTS user_game_relationship (
-  relationship_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  relationship_id INTEGER PRIMARY KEY,
   game_table_id INT NOT NULL,
   catalog_status TEXT NOT NULL DEFAULT 'backlog',
   date_added TEXT NOT NULL,
@@ -25,28 +31,13 @@ CREATE TABLE IF NOT EXISTS user_game_relationship (
   hours_played REAL,
   rating REAL,
   user_notes TEXT,
-  FOREIGN KEY (game_table_id) REFERENCES games(game_table_id)
-);
-
-CREATE TABLE IF NOT EXISTS platforms (
-  platform_id INTEGER PRIMARY KEY AUTOINCREMENT,
-  platform TEXT NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS genres (
-  genre_id INTEGER PRIMARY KEY AUTOINCREMENT,
-  genre TEXT NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS companies (
-  company_id INTEGER PRIMARY KEY AUTOINCREMENT,
-  company TEXT NOT NULL
+  FOREIGN KEY (game_table_id) REFERENCES games(game_table_id),
+  UNIQUE (relationship_id, game_table_id)
 );
 
 CREATE TABLE IF NOT EXISTS multiplayer_modes (
-  multiplayer_id INTEGER PRIMARY KEY AUTOINCREMENT,
-  igdb_id INT NOT NULL,
-  platform_id INT NOT NULL,
+  multiplayer_id INTEGER PRIMARY KEY,
+  game_table_id INT NOT NULL,
   campaigncoop INT,
   dropin INT,
   lancoop INT,
@@ -56,23 +47,57 @@ CREATE TABLE IF NOT EXISTS multiplayer_modes (
   splitscreenonline INT,
   offlinemax INT,
   onlinemax INT,
-  FOREIGN KEY (igdb_id) REFERENCES games(igdb_id),
-  FOREIGN KEY (platform_id) REFERENCES platforms(platform_id)
+  FOREIGN KEY (game_table_id) REFERENCES games(game_table_id),
+  UNIQUE (multiplayer_id, game_table_id)
 );
 
-CREATE TABLE IF NOT EXISTS website_types (
-  website_type_id INTEGER PRIMARY KEY AUTOINCREMENT,
-  website_type_name TEXT NOT NULL
+CREATE TABLE IF NOT EXISTS external_sources (
+  ext_src_id INTEGER PRIMARY KEY,
+  game_table_id INT NOT NULL,
+  ext_src TEXT NOT NULL,
+  ext_src_uid TEXT NOT NULL UNIQUE,
+  FOREIGN KEY (game_table_id) REFERENCES games(game_table_id),
+  UNIQUE (ext_src_id, game_table_id)
 );
 
-CREATE TABLE IF NOT EXISTS age_rating_category (
-  category_id INTEGER PRIMARY KEY AUTOINCREMENT,
-  rating TEXT NOT NULL
+CREATE TABLE IF NOT EXISTS game_involved_companies (
+  company_id INTEGER PRIMARY KEY,
+  game_table_id INT NOT NULL,
+  company TEXT NOT NULL,
+  is_developer INT NOT NULL,
+  is_porting INT NOT NULL,
+  is_publisher INT NOT NULL,
+  is_supporting INT NOT NULL,
+  FOREIGN KEY (game_table_id) REFERENCES games(game_table_id),
+  UNIQUE (game_table_id, company)
 );
 
-CREATE TABLE IF NOT EXISTS age_rating_description (
-  description_id INTEGER PRIMARY KEY AUTOINCREMENT,
-  description TEXT NOT NULL
+CREATE TABLE IF NOT EXISTS game_platforms (
+  platform_id INTEGER PRIMARY KEY,
+  game_table_id INT NOT NULL,
+  platform TEXT NOT NULL,
+  platform_abbr TEXT,
+  alt_platform_name TEXT,
+  FOREIGN KEY (game_table_id) REFERENCES games(game_table_id),
+  UNIQUE (game_table_id, platform)
+);
+
+CREATE TABLE IF NOT EXISTS game_websites (
+  website_id INTEGER PRIMARY KEY,
+  game_table_id INT NOT NULL,
+  website_type TEXT NOT NULL,
+  website_url TEXT NOT NULL unique,
+  FOREIGN KEY (game_table_id) REFERENCES games(game_table_id),
+  UNIQUE (game_table_id, website_type)
+);
+
+CREATE TABLE IF NOT EXISTS game_series (
+  series_id INTEGER PRIMARY KEY,
+  game_table_id INT NOT NULL,
+  series TEXT NOT NULL,
+  total_games_in_series INT,
+  FOREIGN KEY (game_table_id) REFERENCES games(game_table_id),
+  UNIQUE (game_table_id, series)
 );
 
 CREATE TABLE IF NOT EXISTS hltb_data (
@@ -82,7 +107,8 @@ CREATE TABLE IF NOT EXISTS hltb_data (
   main_extras REAL,
   completionist REAL,
   all_play_styles REAL,
-  FOREIGN KEY (game_table_id) REFERENCES games(game_table_id)
+  FOREIGN KEY (game_table_id) REFERENCES games(game_table_id),
+  UNIQUE (hltb_id, game_table_id)
 );
 
 CREATE TABLE IF NOT EXISTS gamepass_catalog (
@@ -96,70 +122,12 @@ CREATE TABLE IF NOT EXISTS gamepass_catalog (
   pc INT DEFAULT 0
 );
 
-CREATE TABLE IF NOT EXISTS game_genres (
-  game_table_id INT NOT NULL,
-  genre_id INT NOT NULL,
-  PRIMARY KEY (game_table_id, genre_id),
-  FOREIGN KEY (game_table_id) REFERENCES games(game_table_id),
-  FOREIGN KEY (genre_id) REFERENCES genres(genre_id)
-);
-
-CREATE TABLE IF NOT EXISTS game_platforms (
-  game_table_id INT NOT NULL,
-  platform_id INT NOT NULL,
-  PRIMARY KEY (game_table_id, platform_id),
-  FOREIGN KEY (game_table_id) REFERENCES games(game_table_id),
-  FOREIGN KEY (platform_id) REFERENCES platforms(platform_id)
-);
-
-CREATE TABLE IF NOT EXISTS game_involved_companies (
-  game_table_id INT NOT NULL,
-  company_id INT NOT NULL,
-  is_developer INT NOT NULL,
-  is_publisher INT NOT NULL,
-  PRIMARY KEY (game_table_id, company_id),
-  FOREIGN KEY (game_table_id) REFERENCES games(game_table_id),
-  FOREIGN KEY (company_id) REFERENCES companies(company_id)
-);
-
-CREATE TABLE IF NOT EXISTS game_websites (
-  game_table_id INT NOT NULL,
-  website_id INT NOT NULL,
-  website_type_id INT NOT NULL,
-  website_url TEXT NOT NULL,
-  PRIMARY KEY (game_table_id, website_id),
-  FOREIGN KEY (game_table_id) REFERENCES games(game_table_id),
-  FOREIGN KEY (website_type_id) REFERENCES website_types(website_type_id)
-);
-
-CREATE TABLE IF NOT EXISTS game_ratings (
-  game_table_id INT NOT NULL,
-  age_rating_id INT NOT NULL,
-  category_id INT NOT NULL,
-  description_id INT NOT NULL,
-  PRIMARY KEY (game_table_id, age_rating_id, category_id, description_id),
-  FOREIGN KEY (game_table_id) REFERENCES games(game_table_id),
-  FOREIGN KEY (category_id) REFERENCES age_rating_category(category_id),
-  FOREIGN KEY (description_id) REFERENCES age_rating_description(description_id)
-);
-
-CREATE TABLE IF NOT EXISTS game_series_link (
-  game_table_id INT NOT NULL,
-  series_id INT NOT NULL,
-  place_in_series_release INT,
-  place_in_series_timeline INT,
-  total_games_in_series INT,
-  PRIMARY KEY (game_table_id, series_id),
-  FOREIGN KEY (game_table_id) REFERENCES games(game_table_id),
-  FOREIGN KEY (series_id) REFERENCES game_series(series_id)
-);
-
 CREATE TABLE IF NOT EXISTS user_platform_own (
   relationship_id INT NOT NULL,
   platform_id INT NOT NULL,
   PRIMARY KEY (relationship_id, platform_id),
   FOREIGN KEY (relationship_id) REFERENCES user_game_relationship(relationship_id),
-  FOREIGN KEY (platform_id) REFERENCES platforms(platform_id)
+  FOREIGN KEY (platform_id) REFERENCES game_platforms(platform_id)
 );
 
 CREATE TABLE IF NOT EXISTS user_played_on (
@@ -168,10 +136,5 @@ CREATE TABLE IF NOT EXISTS user_played_on (
   game_hours REAL,
   PRIMARY KEY (relationship_id, platform_id),
   FOREIGN KEY (relationship_id) REFERENCES user_game_relationship(relationship_id),
-  FOREIGN KEY (platform_id) REFERENCES platforms(platform_id)
-);
-
-CREATE TABLE IF NOT EXISTS igdb_table_refresh (
-  table_name TEXT PRIMARY KEY,
-  last_updated TEXT
+  FOREIGN KEY (platform_id) REFERENCES game_platforms(platform_id)
 );
