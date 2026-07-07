@@ -378,493 +378,537 @@ def gamepass_update():
         return redirect(url_for("index"))
 
 
-@app.route("/game_details/<int:game_table_id>")
+@app.route("/game_details/<int:game_table_id>", methods=["GET", "POST"])
 def game_details(game_table_id):
-    conn = get_conn()
+    if request.method == "POST":
+        conn = get_conn()
 
-    try:
-        core_game_info = conn.execute(
-            """
-            SELECT 
-                title, 
-                alt_titles,
-                cover_url,
-                summary,
-                story,
-                release_date,      
-                CASE
-                    WHEN controller_supported = 1 THEN 'Controller Supported'
-                    WHEN controller_supported = 0 THEN 'Controller Not Supported'
-                    ELSE NULL
-                END AS controller_supported,
-                game_type,
-                game_modes,
-                genres,
-                themes,
-                age_rating_org,
-                age_rating_cat,
-                age_rating_desc,
-                expansion_of
-            FROM games
-            WHERE game_table_id = ?
-        """,
-            (game_table_id,),
-        ).fetchone()
+        try:
+            core_game_info = conn.execute(
+                """
+                SELECT 
+                    title, 
+                    alt_titles,
+                    cover_url,
+                    summary,
+                    story,
+                    release_date,      
+                    CASE
+                        WHEN controller_supported = 1 THEN 'Controller Supported'
+                        WHEN controller_supported = 0 THEN 'Controller Not Supported'
+                        ELSE NULL
+                    END AS controller_supported,
+                    game_type,
+                    game_modes,
+                    genres,
+                    themes,
+                    age_rating_org,
+                    age_rating_cat,
+                    age_rating_desc,
+                    expansion_of
+                FROM games
+                WHERE game_table_id = ?
+            """,
+                (game_table_id,),
+            ).fetchone()
 
-        relationship_info = conn.execute(
-            """
-            SELECT
-                catalog_status,
-                date_main_completed,
-                date_completed,
-                hours_played,
-                rating,
-                user_notes
-            FROM user_game_relationship
-            WHERE game_table_id = ?
-        """,
-            (game_table_id,),
-        ).fetchone()
-
-        multiplayer_info = conn.execute(
-            """
-            SELECT
-                campaigncoop,
-                dropin,
-                lancoop,
-                offlinecoop,
-                onlinecoop,
-                splitscreen,
-                splitscreenonline,
-                offlinemax,
-                onlinemax
-            FROM multiplayer_modes
-            WHERE game_table_id = ?
-        """,
-            (game_table_id,),
-        ).fetchone()
-
-        ext_src_info = conn.execute(
-            """
-            SELECT
-                ext_src,
-                ext_src_uid
-            FROM external_sources
-            WHERE game_table_id = ?
-        """,
-            (game_table_id,),
-        ).fetchall()
-
-        company_info = conn.execute(
-            """
-            SELECT
-                company,
-                is_developer,
-                is_porting,
-                is_publisher,
-                is_supporting
-            FROM game_involved_companies
-            WHERE game_table_id = ?
-        """,
-            (game_table_id,),
-        ).fetchall()
-
-        platform_info = conn.execute(
-            """
-            SELECT platform
-            FROM game_platforms
-            WHERE game_table_id = ?
-        """,
-            (game_table_id,),
-        ).fetchall()
-
-        website_info = conn.execute(
-            """
-            SELECT
-                website_type,
-                website_url
-            FROM game_websites
-            WHERE game_table_id = ?
-        """,
-            (game_table_id,),
-        ).fetchall()
-
-        series_info = conn.execute(
-            """
-            SELECT 
-                series,
-                total_games_in_series
-            FROM game_series
-            WHERE game_table_id = ?
-        """,
-            (game_table_id,),
-        ).fetchall()
-
-        hltb_info = conn.execute(
-            """
-            SELECT
-                main_story,
-                main_extras,
-                completionist,
-                all_play_styles
-            FROM hltb_data
-            WHERE game_table_id = ?
-        """,
-            (game_table_id,),
-        ).fetchone()
-
-        user_platform_own_info = conn.execute(
-            """
-            SELECT gp.platform
-            FROM game_platforms gp
-            JOIN user_platform_own u
-            ON gp.platform_id = u.platform_id
-            AND u.relationship_id = (
-                SELECT relationship_id
+            relationship_info = conn.execute(
+                """
+                SELECT
+                    catalog_status,
+                    date_main_completed,
+                    date_completed,
+                    hours_played,
+                    rating,
+                    user_notes
                 FROM user_game_relationship
                 WHERE game_table_id = ?
-            )
-            WHERE gp.game_table_id = ?
-        """,
-            (game_table_id, game_table_id),
-        ).fetchall()
+            """,
+                (game_table_id,),
+            ).fetchone()
 
-        user_played_on_info = conn.execute(
-            """
-            SELECT gp.platform
-            FROM game_platforms gp
-            JOIN user_played_on u
-            ON gp.platform_id = u.platform_id
-            AND u.relationship_id = (
-                SELECT relationship_id
-                FROM user_game_relationship
+            multiplayer_info = conn.execute(
+                """
+                SELECT
+                    campaigncoop,
+                    dropin,
+                    lancoop,
+                    offlinecoop,
+                    onlinecoop,
+                    splitscreen,
+                    splitscreenonline,
+                    offlinemax,
+                    onlinemax
+                FROM multiplayer_modes
                 WHERE game_table_id = ?
-            )
-            WHERE gp.game_table_id = ?
-        """,
-            (game_table_id, game_table_id),
-        ).fetchall()
+            """,
+                (game_table_id,),
+            ).fetchone()
 
-    except sqlite3.Error as e:
-        log.error(f"An error occurred during database operation. {type(e).__name__}: {e}")
-        flash("Something went wrong processing game details, try again.", "error")
-        return redirect(url_for("index"))
-    
-    finally:
-        conn.close()
-    
-    if core_game_info:
-        core_game_dict = {
-            "game_title": core_game_info[0],
-            "alt_titles": core_game_info[1],
-            "cover_url": core_game_info[2],
-            "summary": core_game_info[3],
-            "story": core_game_info[4],
-            "release_date": core_game_info[5],
-            "controller_supported": core_game_info[6],
-            "game_type": core_game_info[7],
-            "game_modes": core_game_info[8],
-            "genres": core_game_info[9],
-            "themes": core_game_info[10],
-            "age_rating_org": core_game_info[11],
-            "age_rating_cat": core_game_info[12],
-            "age_rating_desc": core_game_info[13],
-            "expansion_of": core_game_info[14],
-        }
-    else:
-        core_game_dict = {}
+            ext_src_info = conn.execute(
+                """
+                SELECT
+                    ext_src,
+                    ext_src_uid
+                FROM external_sources
+                WHERE game_table_id = ?
+            """,
+                (game_table_id,),
+            ).fetchall()
 
-    if relationship_info:
-        relationship_dict = {
-            "catalog_status": relationship_info[0],
-            "date_main_completed": relationship_info[1],
-            "date_completed": relationship_info[2],
-            "hours_played": relationship_info[3],
-            "rating": relationship_info[4],
-            "user_notes": relationship_info[5],
-        }
-    else:
-        relationship_dict = {}
+            company_info = conn.execute(
+                """
+                SELECT
+                    company,
+                    is_developer,
+                    is_porting,
+                    is_publisher,
+                    is_supporting
+                FROM game_involved_companies
+                WHERE game_table_id = ?
+            """,
+                (game_table_id,),
+            ).fetchall()
 
-    if multiplayer_info:
-        multiplayer_dict = {
-            "campaigncoop": multiplayer_info[0],
-            "dropin": multiplayer_info[1],
-            "lancoop": multiplayer_info[2],
-            "offlinecoop": multiplayer_info[3],
-            "onlinecoop": multiplayer_info[4],
-            "splitscreen": multiplayer_info[5],
-            "splitscreenonline": multiplayer_info[6],
-            "offlinemax": multiplayer_info[7],
-            "onlinemax": multiplayer_info[8],
-        }
-    else:
-        multiplayer_dict = {}
+            platform_info = conn.execute(
+                """
+                SELECT platform
+                FROM game_platforms
+                WHERE game_table_id = ?
+            """,
+                (game_table_id,),
+            ).fetchall()
 
-    if ext_src_info:
-        ext_src_dict = [{"ext_src": src[0], "ext_src_uid": src[1]} for src in ext_src_info]
-    else:
-        ext_src_dict = []
+            website_info = conn.execute(
+                """
+                SELECT
+                    website_type,
+                    website_url
+                FROM game_websites
+                WHERE game_table_id = ?
+            """,
+                (game_table_id,),
+            ).fetchall()
 
-    if company_info:
-        company_dict = [
-            {
-                "company": row[0],
-                "is_developer": row[1],
-                "is_porting": row[2],
-                "is_puublisher": row[3],
-                "is_supporting": row[4],
+            series_info = conn.execute(
+                """
+                SELECT 
+                    series,
+                    total_games_in_series
+                FROM game_series
+                WHERE game_table_id = ?
+            """,
+                (game_table_id,),
+            ).fetchall()
+
+            hltb_info = conn.execute(
+                """
+                SELECT
+                    main_story,
+                    main_extras,
+                    completionist,
+                    all_play_styles
+                FROM hltb_data
+                WHERE game_table_id = ?
+            """,
+                (game_table_id,),
+            ).fetchone()
+
+            user_platform_own_info = conn.execute(
+                """
+                SELECT gp.platform
+                FROM game_platforms gp
+                JOIN user_platform_own u
+                ON gp.platform_id = u.platform_id
+                AND u.relationship_id = (
+                    SELECT relationship_id
+                    FROM user_game_relationship
+                    WHERE game_table_id = ?
+                )
+                WHERE gp.game_table_id = ?
+            """,
+                (game_table_id, game_table_id),
+            ).fetchall()
+
+            user_played_on_info = conn.execute(
+                """
+                SELECT gp.platform
+                FROM game_platforms gp
+                JOIN user_played_on u
+                ON gp.platform_id = u.platform_id
+                AND u.relationship_id = (
+                    SELECT relationship_id
+                    FROM user_game_relationship
+                    WHERE game_table_id = ?
+                )
+                WHERE gp.game_table_id = ?
+            """,
+                (game_table_id, game_table_id),
+            ).fetchall()
+
+        except sqlite3.Error as e:
+            log.error(f"An error occurred during database operation. {type(e).__name__}: {e}")
+            flash("Something went wrong processing game details, try again.", "error")
+            return redirect(url_for("index"))
+
+        finally:
+            conn.close()
+
+        if core_game_info:
+            core_game_dict = {
+                "game_title": core_game_info[0],
+                "alt_titles": core_game_info[1],
+                "cover_url": core_game_info[2],
+                "summary": core_game_info[3],
+                "story": core_game_info[4],
+                "release_date": core_game_info[5],
+                "controller_supported": core_game_info[6],
+                "game_type": core_game_info[7],
+                "game_modes": core_game_info[8],
+                "genres": core_game_info[9],
+                "themes": core_game_info[10],
+                "age_rating_org": core_game_info[11],
+                "age_rating_cat": core_game_info[12],
+                "age_rating_desc": core_game_info[13],
+                "expansion_of": core_game_info[14],
             }
-            for row in company_info
-        ]
-    else:
-        company_dict = []
+        else:
+            core_game_dict = {}
 
-    if platform_info:
-        platform_dict = [{"platform": row[0]} for row in platform_info]
-    else:
-        platform_dict = []
+        if relationship_info:
+            relationship_dict = {
+                "catalog_status": relationship_info[0],
+                "date_main_completed": relationship_info[1],
+                "date_completed": relationship_info[2],
+                "hours_played": relationship_info[3],
+                "rating": relationship_info[4],
+                "user_notes": relationship_info[5],
+            }
+        else:
+            relationship_dict = {}
 
-    if website_info:
-        website_dict = [
-            {"website_type": row[0], "website_url": row[1]} for row in website_info
-        ]
-    else:
-        website_info = []
+        if multiplayer_info:
+            multiplayer_dict = {
+                "campaigncoop": multiplayer_info[0],
+                "dropin": multiplayer_info[1],
+                "lancoop": multiplayer_info[2],
+                "offlinecoop": multiplayer_info[3],
+                "onlinecoop": multiplayer_info[4],
+                "splitscreen": multiplayer_info[5],
+                "splitscreenonline": multiplayer_info[6],
+                "offlinemax": multiplayer_info[7],
+                "onlinemax": multiplayer_info[8],
+            }
+        else:
+            multiplayer_dict = {}
 
-    if series_info:
-        series_dict = [
-            {"series_name": row[0], "total_games_in_series": row[1]} for row in series_info
-        ]
-    else:
-        series_dict = []
+        if ext_src_info:
+            ext_src_dict = [{"ext_src": src[0], "ext_src_uid": src[1]} for src in ext_src_info]
+        else:
+            ext_src_dict = []
 
-    if hltb_info:
-        hltb_dict = {
-            "main_story": hltb_info[0],
-            "main_extras": hltb_info[1],
-            "completionist": hltb_info[2],
-            "all_play_styles": hltb_info[3],
-        }
-    else:
-        hltb_dict = {}
+        if company_info:
+            company_dict = [
+                {
+                    "company": row[0],
+                    "is_developer": row[1],
+                    "is_porting": row[2],
+                    "is_puublisher": row[3],
+                    "is_supporting": row[4],
+                }
+                for row in company_info
+            ]
+        else:
+            company_dict = []
 
-    if user_platform_own_info:
-        user_platform_own_dict = [{"owned": row[0]} for row in user_platform_own_info]
-    else:
-        user_platform_own_dict = []
+        if platform_info:
+            platform_dict = [{"platform": row[0]} for row in platform_info]
+        else:
+            platform_dict = []
 
-    if user_played_on_info:
-        user_played_on_dict = [{"played": row[0]} for row in user_played_on_info]
-    else:
-        user_played_on_dict = []
+        if website_info:
+            website_dict = [
+                {"website_type": row[0], "website_url": row[1]} for row in website_info
+            ]
+        else:
+            website_dict = []
 
-    return render_template(
-        "game_details.html",
-        game_table_id=game_table_id,
-        core_game_dict=core_game_dict,
-        relationship_dict=relationship_dict,
-        multiplayer_dict=multiplayer_dict,
-        ext_src_dict=ext_src_dict,
-        company_dict=company_dict,
-        platform_dict=platform_dict,
-        website_dict=website_dict,
-        series_dict=series_dict,
-        hltb_dict=hltb_dict,
-        user_platform_own_dict=user_platform_own_dict,
-        user_played_on_dict=user_played_on_dict,
-    )
+        if series_info:
+            series_dict = [
+                {"series_name": row[0], "total_games_in_series": row[1]} for row in series_info
+            ]
+        else:
+            series_dict = []
+
+        if hltb_info:
+            hltb_dict = {
+                "main_story": hltb_info[0],
+                "main_extras": hltb_info[1],
+                "completionist": hltb_info[2],
+                "all_play_styles": hltb_info[3],
+            }
+        else:
+            hltb_dict = {}
+
+        if user_platform_own_info:
+            user_platform_own_dict = [{"owned": row[0]} for row in user_platform_own_info]
+        else:
+            user_platform_own_dict = []
+
+        if user_played_on_info:
+            user_played_on_dict = [{"played": row[0]} for row in user_played_on_info]
+        else:
+            user_played_on_dict = []
+
+        return render_template(
+            "game_details.html",
+            game_table_id=game_table_id,
+            core_game_dict=core_game_dict,
+            relationship_dict=relationship_dict,
+            multiplayer_dict=multiplayer_dict,
+            ext_src_dict=ext_src_dict,
+            company_dict=company_dict,
+            platform_dict=platform_dict,
+            website_dict=website_dict,
+            series_dict=series_dict,
+            hltb_dict=hltb_dict,
+            user_platform_own_dict=user_platform_own_dict,
+            user_played_on_dict=user_played_on_dict,
+        )
+    else:
+        return redirect(url_for("index"))
 
 
 @app.route("/game_details_form", methods=["GET", "POST"])
 def game_details_form():
     if request.method == "POST":
-        game_table_id = int(request.form["game_table_id"])
-        platform_dict = ast.literal_eval(request.form["platform_dict"])
-
         conn = get_conn()
+        try:
+            game_table_id = int(request.form.get("game_table_id"))
+            platform_dict = ast.literal_eval(request.form.get("platform_dict"))
 
-        cur_relationship_values = conn.execute(
-            """
-            SELECT
-                catalog_status,
-                date_main_completed,
-                date_completed,
-                hours_played,
-                rating,
-                user_notes
-            FROM user_game_relationship
-            WHERE game_table_id = ?
-        """,
-            (game_table_id,),
-        ).fetchone()
-
-        cur_relationship_values = {
-            "catalog_status": cur_relationship_values[0],
-            "date_main_completed": cur_relationship_values[1],
-            "date_completed": cur_relationship_values[2],
-            "hours_played": cur_relationship_values[3],
-            "rating": cur_relationship_values[4],
-            "user_notes": cur_relationship_values[5],
-        }
-
-        ownership_values = conn.execute(
-            """
-            SELECT
-                gp.platform,
-                upo.relationship_id
-            FROM game_platforms gp
-            LEFT JOIN user_platform_own upo
-            ON gp.platform_id = upo.platform_id
-            AND upo.relationship_id = (
-                SELECT relationship_id
+            fetch_cur_relationship_values = conn.execute(
+                """
+                SELECT
+                    catalog_status,
+                    date_main_completed,
+                    date_completed,
+                    hours_played,
+                    rating,
+                    user_notes
                 FROM user_game_relationship
-                WHERE game_table_id =?                            
+                WHERE game_table_id = ?
+            """,
+                (game_table_id,),
+            ).fetchone()
+
+            if fetch_cur_relationship_values:
+                cur_relationship_values = {
+                    "catalog_status": fetch_cur_relationship_values[0],
+                    "date_main_completed": fetch_cur_relationship_values[1],
+                    "date_completed": fetch_cur_relationship_values[2],
+                    "hours_played": fetch_cur_relationship_values[3],
+                    "rating": fetch_cur_relationship_values[4],
+                    "user_notes": fetch_cur_relationship_values[5],
+                }
+            else:
+                cur_relationship_values = {}
+
+            fetch_ownership_values = conn.execute(
+                """
+                SELECT
+                    gp.platform,
+                    upo.relationship_id
+                FROM game_platforms gp
+                LEFT JOIN user_platform_own upo
+                ON gp.platform_id = upo.platform_id
+                AND upo.relationship_id = (
+                    SELECT relationship_id
+                    FROM user_game_relationship
+                    WHERE game_table_id =?                            
+                )
+                WHERE gp.game_table_id = ?
+            """,
+                (game_table_id, game_table_id),
+            ).fetchall()
+
+            if fetch_ownership_values:
+                ownership_values = [
+                    {"platform": value[0], "owned": True if value[1] else False}
+                    for value in fetch_ownership_values
+                ]
+            else:
+                ownership_values = []
+
+            fetch_played_on_values = conn.execute(
+                """
+                SELECT
+                    gp.platform,
+                    upo.relationship_id
+                FROM game_platforms gp
+                LEFT JOIN user_played_on upo
+                ON gp.platform_id = upo.platform_id
+                AND upo.relationship_id = (
+                    SELECT relationship_id
+                    FROM user_game_relationship
+                    WHERE game_table_id =?                            
+                )
+                WHERE gp.game_table_id = ?
+            """,
+                (game_table_id, game_table_id),
+            ).fetchall()
+
+            if fetch_played_on_values:
+                played_on_values = [
+                    {"platform": value[0], "played": True if value[1] else False}
+                    for value in fetch_played_on_values
+                ]
+            else:
+                played_on_values = []
+
+        except (TypeError, ValueError, SyntaxError) as e:
+            log.error(f"Improper datatype returned. {type(e).__name__}: {e}")
+            flash("Something went wrong obtaining information", "error")
+            return redirect(url_for("index"))
+        
+        except sqlite3.Error as e:
+            log.error(f"An error occurred while interacting with the database. {type(e).__name__}: {e}")
+            flash("Something went wrong during the database operation, please try again", "error")
+            return redirect(url_for("index"))
+
+        else:
+            return render_template(
+                "update_game.html",
+                game_table_id=game_table_id,
+                platform_dict=platform_dict,
+                cur_relationship_values=cur_relationship_values,
+                ownership_values=ownership_values,
+                played_on_values=played_on_values,
             )
-            WHERE gp.game_table_id = ?
-        """,
-            (game_table_id, game_table_id),
-        ).fetchall()
-
-        ownership_values = [
-            {"platform": value[0], "owned": True if value[1] else False}
-            for value in ownership_values
-        ]
-
-        played_on_values = conn.execute(
-            """
-            SELECT
-                gp.platform,
-                upo.relationship_id
-            FROM game_platforms gp
-            LEFT JOIN user_played_on upo
-            ON gp.platform_id = upo.platform_id
-            AND upo.relationship_id = (
-                SELECT relationship_id
-                FROM user_game_relationship
-                WHERE game_table_id =?                            
-            )
-            WHERE gp.game_table_id = ?
-        """,
-            (game_table_id, game_table_id),
-        ).fetchall()
-
-        played_on_values = [
-            {"platform": value[0], "played": True if value[1] else False}
-            for value in played_on_values
-        ]
-
-        conn.close()
-
-        return render_template(
-            "update_game.html",
-            game_table_id=game_table_id,
-            platform_dict=platform_dict,
-            cur_relationship_values=cur_relationship_values,
-            ownership_values=ownership_values,
-            played_on_values=played_on_values,
-        )
+        
+        finally:
+            conn.close()
+    else:
+        return redirect(url_for("index"))
 
 
 @app.route("/update_game_details", methods=["GET", "POST"])
 def update_game_details():
     if request.method == "POST":
         conn = get_conn()
+        try:
+            if not request.form.get("game_table_id"):
+                log.error("game_table_id not provided.")
+                flash("Something went wrong accessing game information, try again", "error")
+                return redirect(url_for("index"))
+        
+            game_table_id = int(request.form.get("game_table_id"))
+            catalog_update = request.form.get("catalog_status")
+            date_main_update = request.form.get("date_main")
+            date_full_update = request.form.get("date_full")
+            hours_update = (
+                float(request.form.get("hours_played"))
+                if request.form.get("hours_played")
+                else 0.0
+            )
+            rating_update = (
+                float(request.form.get("rating")) if request.form.get("rating") else 0.0
+            )
+            notes_update = request.form.get("user_notes")
+            owned_platforms = request.form.getlist("owned_platform")
+            played_platforms = request.form.getlist("played_platform")
+            controller_support = (
+                int(request.form.get("controller_support"))
+                if request.form.get("controller_support")
+                else 0
+            )
 
-        game_table_id = int(request.form["game_table_id"])
-        catalog_update = request.form["catalog_status"]
-        date_main_update = request.form["date_main"]
-        date_full_update = request.form["date_full"]
-        hours_update = (
-            float(request.form["hours_played"])
-            if request.form["hours_played"]
-            else None
-        )
-        rating_update = (
-            float(request.form["rating"]) if request.form["rating"] else None
-        )
-        notes_update = request.form["user_notes"]
-        owned_platforms = request.form.getlist("owned_platform")
-        played_platforms = request.form.getlist("played_platform")
-        controller_support = (
-            int(request.form["controller_support"])
-            if request.form["controller_support"]
-            else None
-        )
-
-        conn.execute(
-            """
-            UPDATE user_game_relationship
-            SET
-                catalog_status = ?,
-                date_main_completed = ?,
-                date_completed = ?,
-                hours_played = ?,
-                rating = ?,
-                user_notes = ?
-            WHERE game_table_id = ?
-        """,
-            (
-                catalog_update,
-                date_main_update,
-                date_full_update,
-                hours_update,
-                rating_update,
-                notes_update,
-                game_table_id,
-            ),
-        )
-        conn.commit()
-
-        user_game_rel_id = conn.execute(
-            """
-            SELECT relationship_id
-            FROM user_game_relationship
-            WHERE game_table_id = ?
-        """,
-            (game_table_id,),
-        ).fetchone()
-
-        for platform in owned_platforms:
             conn.execute(
                 """
-                INSERT OR IGNORE INTO user_platform_own (relationship_id, platform_id)
-                VALUES (?, (
-                    SELECT platform_id
-                    FROM game_platforms
-                    WHERE platform = ?
-                    AND game_table_id = ?
-                ))
+                UPDATE user_game_relationship
+                SET
+                    catalog_status = ?,
+                    date_main_completed = ?,
+                    date_completed = ?,
+                    hours_played = ?,
+                    rating = ?,
+                    user_notes = ?
+                WHERE game_table_id = ?
             """,
-                (user_game_rel_id[0], platform, game_table_id),
+                (
+                    catalog_update,
+                    date_main_update,
+                    date_full_update,
+                    hours_update,
+                    rating_update,
+                    notes_update,
+                    game_table_id,
+                ),
             )
-        conn.commit()
+            conn.commit()
 
-        for platform in played_platforms:
+            user_game_rel_id = conn.execute(
+                """
+                SELECT relationship_id
+                FROM user_game_relationship
+                WHERE game_table_id = ?
+            """,
+                (game_table_id,),
+            ).fetchone()
+
+            if user_game_rel_id:
+                for platform in owned_platforms:
+                    conn.execute(
+                        """
+                        INSERT OR IGNORE INTO user_platform_own (relationship_id, platform_id)
+                        VALUES (?, (
+                            SELECT platform_id
+                            FROM game_platforms
+                            WHERE platform = ?
+                            AND game_table_id = ?
+                        ))
+                    """,
+                        (user_game_rel_id[0], platform, game_table_id),
+                    )
+                conn.commit()
+
+                for platform in played_platforms:
+                    conn.execute(
+                        """
+                        INSERT OR IGNORE INTO user_played_on (relationship_id, platform_id, game_hours)
+                        VALUES (?, (
+                            SELECT platform_id
+                            FROM game_platforms
+                            WHERE platform = ?
+                            AND game_table_id = ?
+                        ), ?)
+                    """,
+                        (user_game_rel_id[0], platform, game_table_id, hours_update),
+                    )
+                conn.commit()
+            else:
+                log.warning(f"No relationship id found for game_table_id = {game_table_id}. Platforms in owned/played not updated.")
+
             conn.execute(
                 """
-                INSERT OR IGNORE INTO user_played_on (relationship_id, platform_id, game_hours)
-                VALUES (?, (
-                    SELECT platform_id
-                    FROM game_platforms
-                    WHERE platform = ?
-                    AND game_table_id = ?
-                ), ?)
+                UPDATE games
+                SET controller_supported = ?
+                WHERE game_table_id = ?
             """,
-                (user_game_rel_id[0], platform, game_table_id, hours_update),
+                (controller_support, game_table_id),
             )
-        conn.commit()
+            conn.commit()
 
-        conn.execute(
-            """
-            UPDATE games
-            SET controller_supported = ?
-            WHERE game_table_id = ?
-        """,
-            (controller_support, game_table_id),
-        )
-        conn.commit()
+        except sqlite3.Error as e:
+            log.error(f"There was an error when operating in the database. {type(e).__name__}: {e}")
+            flash("An unexpected error occurred, try again.", "error")
+            conn.rollback()
+            return redirect(url_for("game_details", game_table_id=game_table_id))
 
-        conn.close()
+        else:
+            return redirect(url_for("game_details", game_table_id=game_table_id))
 
-        return redirect(url_for("game_details", game_table_id=game_table_id))
+        finally:
+            conn.close()
+    else:
+        return redirect(url_for("index"))
