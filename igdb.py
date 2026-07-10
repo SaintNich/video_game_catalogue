@@ -12,6 +12,7 @@ logging.basicConfig(
     level=logging.DEBUG,
     format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
+    filename="games.log",
 )
 
 log = logging.getLogger(__name__)
@@ -145,16 +146,21 @@ def update_games(full_game_result: dict) -> int:
             else None
         )
 
+        rating_org = ""
+        rating_cat = ""
+        rating_desc = []
+
         if full_game_result.get("age_ratings"):
             for rating in full_game_result.get("age_ratings"):
-                rating_org = (
+                chk_rating_org = (
                     rating.get("organization").get("name")
                     if rating.get("organization")
                     else None
                 )
-                if rating_org != "ESRB":
+                if chk_rating_org != "ESRB":
                     continue
 
+                rating_org = chk_rating_org
                 rating_cat = (
                     rating.get("rating_category").get("rating")
                     if rating.get("rating_category")
@@ -171,26 +177,26 @@ def update_games(full_game_result: dict) -> int:
 
         conn.execute(
             """
-      INSERT OR IGNORE INTO games (
-        igdb_id, 
-        title,
-        alt_titles,
-        cover_url,
-        images,
-        summary,
-        story,
-        release_date,
-        game_type,
-        game_modes,
-        genres,
-        themes,
-        expansion_of,
-        age_rating_org,
-        age_rating_cat,
-        age_rating_desc
-      )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """,
+            INSERT OR IGNORE INTO games (
+                igdb_id, 
+                title,
+                alt_titles,
+                cover_url,
+                images,
+                summary,
+                story,
+                release_date,
+                game_type,
+                game_modes,
+                genres,
+                themes,
+                expansion_of,
+                age_rating_org,
+                age_rating_cat,
+                age_rating_desc
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
             (
                 igdb_id,
                 title,
@@ -216,10 +222,10 @@ def update_games(full_game_result: dict) -> int:
 
         game_table_ids = conn.execute(
             """
-      SELECT game_table_id
-      FROM games
-      WHERE igdb_id = ?
-      """,
+            SELECT game_table_id
+            FROM games
+            WHERE igdb_id = ?
+        """,
             (full_game_result.get("id"),),
         ).fetchone()
 
@@ -246,20 +252,20 @@ def update_multiplayer(game_table_id: int, full_game_result: dict):
             multiplayer = multiplayer[0]
             conn.execute(
                 """
-        INSERT OR IGNORE INTO multiplayer_modes (
-          game_table_id, 
-          campaigncoop, 
-          dropin, 
-          lancoop, 
-          offlinecoop,
-          onlinecoop,
-          splitscreen,
-          splitscreenonline,
-          offlinemax,
-          onlinemax
-        )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      """,
+                INSERT OR IGNORE INTO multiplayer_modes (
+                    game_table_id, 
+                    campaigncoop, 
+                    dropin, 
+                    lancoop, 
+                    offlinecoop,
+                    onlinecoop,
+                    splitscreen,
+                    splitscreenonline,
+                    offlinemax,
+                    onlinemax
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
                 (
                     game_table_id,
                     multiplayer.get("campaigncoop"),
@@ -314,11 +320,11 @@ def update_external_sources(game_table_id: int, full_game_result: dict):
             for src in ext_sources:
                 conn.execute(
                     """
-          INSERT OR IGNORE INTO external_sources (
-            game_table_id, ext_src, ext_src_uid           
-          )
-          VALUES (?, ?, ?)
-        """,
+                    INSERT OR IGNORE INTO external_sources (
+                        game_table_id, ext_src, ext_src_uid           
+                    )
+                    VALUES (?, ?, ?)
+                """,
                     (game_table_id, src.get("ext_source"), src.get("ext_uid")),
                 )
         else:
@@ -372,16 +378,16 @@ def update_game_involved_companies(game_table_id: int, full_game_result: dict):
             for co in inv_comps:
                 conn.execute(
                     """
-          INSERT OR IGNORE INTO game_involved_companies (
-            game_table_id,
-            company,
-            is_developer,
-            is_porting,
-            is_publisher,
-            is_supporting           
-          )
-          VALUES (?, ?, ?, ?, ?, ?)
-        """,
+                    INSERT OR IGNORE INTO game_involved_companies (
+                        game_table_id,
+                        company,
+                        is_developer,
+                        is_porting,
+                        is_publisher,
+                        is_supporting           
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?)
+                """,
                     (
                         game_table_id,
                         co.get("company_name"),
@@ -438,14 +444,14 @@ def update_game_platforms(game_table_id: int, full_game_result: dict):
             for platform in platforms:
                 conn.execute(
                     """
-          INSERT OR IGNORE INTO game_platforms (
-            game_table_id,
-            platform,
-            platform_abbr,
-            alt_platform_name           
-          )
-          VALUES (?, ?, ?, ?)
-        """,
+                    INSERT OR IGNORE INTO game_platforms (
+                        game_table_id,
+                        platform,
+                        platform_abbr,
+                        alt_platform_name           
+                    )
+                    VALUES (?, ?, ?, ?)
+                """,
                     (
                         game_table_id,
                         platform.get("name"),
@@ -501,13 +507,13 @@ def update_game_websites(game_table_id: int, full_game_result: dict):
             for site in websites:
                 conn.execute(
                     """
-          INSERT OR IGNORE INTO game_websites (
-            game_table_id,
-            website_type,
-            website_url
-          )
-          VALUES (?, ?, ?)
-        """,
+                    INSERT OR IGNORE INTO game_websites (
+                        game_table_id,
+                        website_type,
+                        website_url
+                    )
+                    VALUES (?, ?, ?)
+                """,
                     (game_table_id, site.get("type"), site.get("url")),
                 )
         else:
@@ -556,13 +562,13 @@ def update_game_series(game_table_id: int, full_game_result: dict):
             for collection in collections:
                 conn.execute(
                     """
-          INSERT OR IGNORE INTO game_series (
-            game_table_id,
-            series,
-            total_games_in_series           
-          )
-          VALUES (?, ?, ?)
-        """,
+                    INSERT OR IGNORE INTO game_series (
+                        game_table_id,
+                        series,
+                        total_games_in_series           
+                    )
+                    VALUES (?, ?, ?)
+                """,
                     (
                         game_table_id,
                         collection.get("collection_name"),

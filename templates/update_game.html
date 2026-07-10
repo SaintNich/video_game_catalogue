@@ -60,14 +60,14 @@
 		</label>
 		<input type="date" id="date_main" name="date_main" />
 
-		<label for="date_full" value="{{ cur_relationship_values.date_completed }}">Date game 100% completed: </label>
-		<input type="date" id="date_full" name="date_full" />
+		<label for="date_full">Date game 100% completed: </label>
+		<input type="date" id="date_full" name="date_full" value="{{ cur_relationship_values.date_completed }}" />
 
-		<label for="hours_played" value="{{ cur_relationship_values.hours_played }}">Hours played: </label>
-		<input type="number" id="hours_played" name="hours_played" />
+		<label for="hours_played">Hours played: </label>
+		<input type="number" id="hours_played" name="hours_played" value="{{ cur_relationship_values.hours_played }}" />
 
-		<label for="rating" value="{{ cur_relationship_values.rating }}">Rating: </label>
-		<input type="number" id="rating" name="rating" min="0" max="5" />
+		<label for="rating">Rating: </label>
+		<input type="number" id="rating" name="rating" min="0" max="5" value="{{ cur_relationship_values.rating }}" />
 
 		<label for="user_notes">Notes: </label>
 		<textarea

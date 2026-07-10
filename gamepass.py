@@ -18,6 +18,10 @@ logging.basicConfig(
     level=logging.DEBUG,
     format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler("games.log"),
+    ],
 )
 
 log = logging.getLogger(__name__)
@@ -45,25 +49,29 @@ def get_bigIds() -> dict:
         }
 
         for tier in GAMEPASS_TIERS:
+            log.debug(f"Beginning {tier} loop of GAMEPASS_TIERS get_bigIds()")
             sigl = GAMEPASS_TIERS.get(tier).get("sigl")
             tier_code = GAMEPASS_TIERS.get(tier).get("tier_code")
 
             for platform in GAMEPASS_PLATFORMS:
+                log.debug(f"Beginning {platform} loop of GAMEPASS_PLATFORMS")
                 chk_bigID_string = create_bigId_string(
                     sigl=sigl, platform=platform, tier_code=tier_code
                 )
 
                 if chk_bigID_string:
+                    log.debug(
+                        f"bid_ID_string created successfully for tier = {tier} and platform = {platform}"
+                    )
                     response = requests.get(chk_bigID_string)
                 else:
                     log.error("Failed to create gamepass API search string for bigId.")
                     return {}
 
                 log.debug(
-                    f"Response Status Code: {response.status_code} | URL: {response.url} | Time: {response.elapsed.total_seconds()}s | Body Preview: {response.text[:200]}"
+                    f"Gamepass Response Status Code: {response.status_code} | URL: {response.url} | Time: {response.elapsed.total_seconds()}s | Body Preview: {response.text[:200]}"
                 )
                 response.raise_for_status()
-
                 responses_of_bigIds = response.json()
 
                 for bigId_response in responses_of_bigIds:
@@ -74,6 +82,10 @@ def get_bigIds() -> dict:
                     else:
                         log.debug(f"Failed to obtain bigID for {bigId_response}")
                         continue
+
+                log.debug(f"Completed {platform} loop of GAMEPASS_PLATFORMS")
+
+            log.debug(f"Completed {tier} loop of GAMEPASS_TIERS get_bigIds()")
 
     except requests.RequestException as e:
         log.error(f"Gamepass request failed: {type(e).__name__}: {e}")
@@ -93,6 +105,9 @@ def create_master_set(consoles: dict) -> list:
 
     for platform in GAMEPASS_PLATFORMS:
         for tier in GAMEPASS_TIERS:
+            log.debug(
+                f"Updating master_set for platform = {platform} and tier = {tier}"
+            )
             master_set.update(consoles.get(platform).get(tier))
 
     log.info("Conversion from master_set dictionary to list successful.")
@@ -107,8 +122,10 @@ def add_to_gamepass_table(master_set: list):
         chunked_list = [
             master_set[i : i + list_size] for i in range(0, len(master_set), list_size)
         ]
+        all_products = []
 
-        for chunk in chunked_list:
+        for i, chunk in enumerate(chunked_list):
+            log.debug(f"{i + 1} of {len(chunked_list)} started with {len(chunk)} items")
             list_str = ",".join(chunk)
 
             response = requests.get(
@@ -118,12 +135,26 @@ def add_to_gamepass_table(master_set: list):
                 + "&market=US&languages=en-us"
             )
             log.debug(
-                f"Response Status Code: {response.status_code} | URL: {response.url} | Time: {response.elapsed.total_seconds()}s | Body Preview: {response.text[:200]}"
+                f"{i + 1} of {len(chunked_list)} Received - Response Status Code: {response.status_code} | URL: {response.url} | Time: {response.elapsed.total_seconds()}s | Body Preview: {response.text[:200]}"
             )
             response.raise_for_status()
 
             names_query = response.json()
             products = names_query["Products"]
+
+            all_products.extend(
+                [
+                    {
+                        "game_name": product["LocalizedProperties"][0]["ProductTitle"],
+                        "gamepass_id": product["ProductId"],
+                    }
+                    for product in products
+                ]
+            )
+
+            log.debug(
+                f"{i + 1} of {len(chunked_list)} completed. Total items: {len(all_products)}"
+            )
 
     except requests.RequestException as e:
         log.error(f"Xbox Gamepass request failed: {type(e).__name__}: {e}")
@@ -134,24 +165,26 @@ def add_to_gamepass_table(master_set: list):
         return
 
     else:
-        for product in products:
+        for i, product in enumerate(all_products):
             try:
-                game_name = product["LocalizedProperties"][0]["ProductTitle"]
-                gamepass_id = product["ProductId"]
-
                 conn.execute(
                     """
                     INSERT OR IGNORE INTO gamepass_catalog (gamepass_id, game_title)
                     VALUES (?, ?)
                 """,
-                    (gamepass_id, game_name),
+                    (product.get("gamepass_id"), product.get("game_name")),
                 )
 
             except sqlite3.Error as e:
                 log.error(
-                    f"An operation to the gamepass_catalog table failed for {game_name}: {type(e).__name__}: {e}"
+                    f"An operation to the gamepass_catalog table failed for {product.get('game_name')}: {type(e).__name__}: {e}"
                 )
                 continue
+
+            else:
+                log.debug(
+                    f"Product {i + 1} of {len(all_products)} added to gamepass_catalog successfully."
+                )
 
         conn.commit()
 
@@ -201,11 +234,13 @@ def update_with_tiers(consoles: dict):
                             f"An operation to gamepass_catalog failed for bigId = {bigId}"
                         )
                         continue
-        
+
         conn.commit()
 
     except Exception as e:
-        log.error(f"An error has occurred during the update_with_tiers operation. {type(e).__name__}: {e}")
+        log.error(
+            f"An error has occurred during the update_with_tiers operation. {type(e).__name__}: {e}"
+        )
         return
 
     finally:
@@ -229,7 +264,7 @@ def add_to_games_table():
 
     for gamepass_id, game_title in gamepass_items:
         try:
-            body = f'fields external_games.name, external_games.uid; search "{game_title}";'
+            body = f'fields external_games.name, external_games.uid, external_games.external_game_source.name; search "{game_title}";'
             response = requests.post(IGDB_GAMES_ENDPOINT, headers=header, data=body)
 
             log.debug(
@@ -250,9 +285,16 @@ def add_to_games_table():
         else:
             for search_result in search_results:
                 if search_result.get("external_games"):
+                    steam_id = None
+
                     for external_game in search_result.get("external_games"):
                         try:
                             conn = get_conn()
+                            ext_game_src = external_game.get("external_game_source")
+
+                            if ext_game_src and ext_game_src.get("id") == 1:
+                                steam_id = external_game.get("uid")
+
                             already_added = conn.execute(
                                 """
                                 SELECT gamepass_id FROM games WHERE gamepass_id = ?
@@ -268,6 +310,7 @@ def add_to_games_table():
 
                             if external_game.get("uid") == gamepass_id:
                                 igdb_id = search_result.get("id")
+
                                 chk_igdb = conn.execute(
                                     """
                                     SELECT igdb_id FROM games WHERE igdb_id = ?
@@ -284,13 +327,22 @@ def add_to_games_table():
                                         )
                                         continue
                                     else:
-                                        conn.execute(
-                                            """
-                                            UPDATE games SET gamepass_id = ? WHERE game_table_id = ?
-                                        """,
-                                            (gamepass_id, game_table_id),
-                                        )
-                                        conn.commit()
+                                        if not steam_id:
+                                            conn.execute(
+                                                """
+                                                UPDATE games SET gamepass_id = ? WHERE game_table_id = ?
+                                            """,
+                                                (gamepass_id, game_table_id),
+                                            )
+                                            conn.commit()
+                                        else:
+                                            conn.execute(
+                                                """
+                                                UPDATE games SET gamepass_id = ?, steam_id = ? WHERE game_table_id = ?
+                                            """,
+                                                (gamepass_id, steam_id, game_table_id),
+                                            )
+                                            conn.commit()
 
                         except sqlite3.Error as e:
                             log.error(
@@ -328,6 +380,7 @@ def create_gamepass_user_relationship():
 
     else:
         for game_table_id in gamepass_game_table_ids:
+            game_table_id = game_table_id[0]
             try:
                 if conn.execute(
                     """
@@ -344,7 +397,7 @@ def create_gamepass_user_relationship():
                     INSERT OR IGNORE INTO user_game_relationship (
                         game_table_id,
                         catalog_status,
-                        date_added,         
+                        date_added         
                     )
                     VALUES (?, ?, ?)
                 """,
@@ -353,7 +406,7 @@ def create_gamepass_user_relationship():
 
             except sqlite3.Error as e:
                 log.error(
-                    f"There was an issue operating on the user_game_relationship table for game_table_id = {id}. {type(e).__name__}: {e}"
+                    f"There was an issue operating on the user_game_relationship table for game_table_id = {game_table_id}. {type(e).__name__}: {e}"
                 )
                 continue
 

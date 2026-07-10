@@ -9,6 +9,7 @@ logging.basicConfig(
     level=logging.DEBUG,
     format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
+    filename="games.log",
 )
 
 log = logging.getLogger(__name__)
@@ -38,7 +39,7 @@ def add_hltb_info(
     hltb_main_extras: float,
     hltb_completionist: float,
     hltb_all_styles: float,
-):
+) -> bool:
     conn = get_conn()
 
     try:
@@ -68,8 +69,11 @@ def add_hltb_info(
             f"An operation to the hltb_data table failed: {type(e).__name__}: {e}"
         )
         conn.rollback()
-        return
+        return False
+    
+    else:
+        conn.commit()
+        return True
 
     finally:
-        conn.commit()
         conn.close()
