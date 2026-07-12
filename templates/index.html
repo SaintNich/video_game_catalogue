@@ -1,38 +1,42 @@
-<!doctype html>
-<head> </head>
-<body>
-  {% with messages = get_flashed_messages(with_categories=true) %} {% if messages %} {% for category, message in
-  messages %}
-  <p>{{ category }}: {{ message }}</p>
-  {% endfor %} {% endif %} {% endwith %}
-  <form method="POST" action="{{ url_for('game_search') }}">
-    <input type="text" name="game_search" placeholder="What are you searching for?" />
-    <button type="submit">Search</button>
-  </form>
-  <form method="POST" action="{{ url_for('steam_sync') }}">
-    <input type="hidden" name="steam_sync" />
-    <button type="submit">Sync Steam</button>
-  </form>
-  <form method="POST" action="{{ url_for('gamepass_update') }}">
-    <input type="hidden" name="gamepass_update" />
-    <button type="submit">Update GamePass Catalog</button>
-  </form>
-  <table>
-    <tr>
-      <th>Game Name</th>
-      <th>Release Year</th>
-      <th>Expansion Of</th>
-      <th>Series Name</th>
-      <th>Game Modes</th>
-    </tr>
-    {% for row in catalog_table|sort(attribute="title") %}
-    <tr>
-      <td><a href="{{ url_for('game_details', game_table_id=row.game_table_id) }}">{{ row.title }}</a></td>
-      <td>{{ row.release_date }}</td>
-      <td>{{ row.expansion_of }}</td>
-      <td>{{ row.series_name }}</td>
-      <td>{{ row.game_modes }}</td>
-    </tr>
-    {% endfor %}
-  </table>
-</body>
+{% extends "base.html" %} 
+
+{% block title %}Home{% endblock %} 
+
+{% block content %}
+
+<h1 class="main-heading">Video Game Catalogue</h1>
+<div class="add-games">
+	<div class="add-game-search">
+		<form method="POST" action="{{ url_for('game_search') }}">
+			<input class="form-txt-box" type="text" name="game_search" placeholder="Search to add to catalogue." />
+			<button class="sub-btn" type="submit">Search</button>
+		</form>
+	</div>
+	<div class="add-game-no-search">
+		<form method="POST" action="{{ url_for('steam_sync') }}">
+			<input type="hidden" name="steam_sync" />
+			<button class="sub-btn" type="submit">Sync Steam</button>
+		</form>
+		<form method="POST" action="{{ url_for('gamepass_update') }}">
+			<input type="hidden" name="gamepass_update" />
+			<button class="sub-btn" type="submit">Sync GamePass</button>
+		</form>
+	</div>
+</div>
+
+<div class="owned-games">
+	{% for item in catalog|sort(attribute="title") %}
+	<div class="catalog-game">
+		<figure>
+			<a href="{{ url_for('game_details', game_table_id=item.game_table_id) }}">
+				<img class="cover-art" src="{{ item.cover }}" alt="Cover art for {{ item.title }}" />
+			</a>
+			<figcaption>
+				<a href="{{ url_for('game_details', game_table_id=item.game_table_id) }}">{{ item.title }}</a>
+			</figcaption>
+		</figure>
+	</div>
+	{% endfor %}
+</div>
+
+{% endblock %}

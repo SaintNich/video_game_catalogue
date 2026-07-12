@@ -5,20 +5,23 @@ CREATE TABLE IF NOT EXISTS games (
   gamepass_id TEXT UNIQUE,
   title TEXT NOT NULL,
   alt_titles TEXT,
-  cover_url TEXT,
+  version_title TEXT,
+  version_parent TEXT,
+  cover_img TEXT,
   images TEXT,
   summary TEXT,
   story TEXT,
   release_date TEXT,
   controller_supported INT,
+  game_status TEXT,
   game_type TEXT,
   game_modes TEXT,
   genres TEXT,
   themes TEXT,
   age_rating_org TEXT,
   age_rating_cat TEXT,
-  age_rating_desc TEXT,
-  expansion_of TEXT
+  age_rating_synopsis TEXT,
+  age_rating_desc TEXT
 );
 
 CREATE TABLE IF NOT EXISTS user_game_relationship (
@@ -98,6 +101,20 @@ CREATE TABLE IF NOT EXISTS game_series (
   total_games_in_series INT,
   FOREIGN KEY (game_table_id) REFERENCES games(game_table_id),
   UNIQUE (game_table_id, series)
+);
+
+CREATE TABLE IF NOT EXISTS additional_game_content (
+  content_id INTEGER PRIMARY KEY,
+  game_table_id INT NOT NULL,
+  parent_game TEXT,
+  remakes TEXT,
+  remasters TEXT,
+  dl_content TEXT,
+  expansions TEXT,
+  expanded_games TEXT,
+  standalone_expansions TEXT,
+  series_forks TEXT,
+  FOREIGN KEY (game_table_id) REFERENCES games(game_table_id)
 );
 
 CREATE TABLE IF NOT EXISTS hltb_data (

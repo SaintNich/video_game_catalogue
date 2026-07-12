@@ -52,37 +52,30 @@ def index():
     try:
         catalog_data = conn.execute("""
             SELECT
-                g.game_table_id,
-                g.title,
-                g.release_date,
-                g.expansion_of,
-                s.series,
-                g.game_modes
-            FROM games g
-            LEFT JOIN game_series s
-            ON g.game_table_id = s.game_table_id                          
-            GROUP BY g.game_table_id, g.title, g.release_date
+                game_table_id,
+                title,
+                cover_img
+            FROM games                           
         """).fetchall()
 
     except sqlite3.Error as e:
-        log.error(f"An error occured with the database: {type(e).__name}: {e}")
+        log.error(f"An error occured with the database: {type(e).__name__}: {e}")
         return
 
     else:
         log.info("Successfully obtained 'catalog_data' from database.")
-        catalog_table = [
+        catalog = [
             {
                 "game_table_id": game_table_id,
                 "title": title,
-                "release_date": release_date,
-                "expansion_of": expansion_of,
-                "series_name": series_name,
-                "game_modes": game_modes,
+                "cover": "//images.igdb.com/igdb/image/upload/t_cover_big/"
+                + cover_id
+                + ".webp",
             }
-            for game_table_id, title, release_date, expansion_of, series_name, game_modes in catalog_data
+            for game_table_id, title, cover_id in catalog_data
         ]
-
-        return render_template("index.html", catalog_table=catalog_table)
+        log.debug(f"image url = {catalog}")
+        return render_template("index.html", catalog=catalog)
 
     finally:
         conn.close()
@@ -547,7 +540,9 @@ def game_details(game_table_id):
         ).fetchall()
 
     except sqlite3.Error as e:
-        log.error(f"An error occurred during database operation. {type(e).__name__}: {e}")
+        log.error(
+            f"An error occurred during database operation. {type(e).__name__}: {e}"
+        )
         flash("Something went wrong processing game details, try again.", "error")
         return redirect(url_for("index"))
 
@@ -603,7 +598,9 @@ def game_details(game_table_id):
         multiplayer_dict = {}
 
     if ext_src_info:
-        ext_src_dict = [{"ext_src": src[0], "ext_src_uid": src[1]} for src in ext_src_info]
+        ext_src_dict = [
+            {"ext_src": src[0], "ext_src_uid": src[1]} for src in ext_src_info
+        ]
     else:
         ext_src_dict = []
 
@@ -635,7 +632,8 @@ def game_details(game_table_id):
 
     if series_info:
         series_dict = [
-            {"series_name": row[0], "total_games_in_series": row[1]} for row in series_info
+            {"series_name": row[0], "total_games_in_series": row[1]}
+            for row in series_info
         ]
     else:
         series_dict = []
@@ -768,10 +766,15 @@ def game_details_form():
             log.error(f"Improper datatype returned. {type(e).__name__}: {e}")
             flash("Something went wrong obtaining information", "error")
             return redirect(url_for("index"))
-        
+
         except sqlite3.Error as e:
-            log.error(f"An error occurred while interacting with the database. {type(e).__name__}: {e}")
-            flash("Something went wrong during the database operation, please try again", "error")
+            log.error(
+                f"An error occurred while interacting with the database. {type(e).__name__}: {e}"
+            )
+            flash(
+                "Something went wrong during the database operation, please try again",
+                "error",
+            )
             return redirect(url_for("index"))
 
         else:
@@ -783,7 +786,7 @@ def game_details_form():
                 ownership_values=ownership_values,
                 played_on_values=played_on_values,
             )
-        
+
         finally:
             conn.close()
     else:
@@ -797,9 +800,12 @@ def update_game_details():
         try:
             if not request.form.get("game_table_id"):
                 log.error("game_table_id not provided.")
-                flash("Something went wrong accessing game information, try again", "error")
+                flash(
+                    "Something went wrong accessing game information, try again",
+                    "error",
+                )
                 return redirect(url_for("index"))
-        
+
             game_table_id = int(request.form.get("game_table_id"))
             catalog_update = request.form.get("catalog_status")
             date_main_update = request.form.get("date_main")
@@ -885,7 +891,9 @@ def update_game_details():
                     )
                 conn.commit()
             else:
-                log.warning(f"No relationship id found for game_table_id = {game_table_id}. Platforms in owned/played not updated.")
+                log.warning(
+                    f"No relationship id found for game_table_id = {game_table_id}. Platforms in owned/played not updated."
+                )
 
             conn.execute(
                 """
@@ -898,7 +906,9 @@ def update_game_details():
             conn.commit()
 
         except sqlite3.Error as e:
-            log.error(f"There was an error when operating in the database. {type(e).__name__}: {e}")
+            log.error(
+                f"There was an error when operating in the database. {type(e).__name__}: {e}"
+            )
             flash("An unexpected error occurred, try again.", "error")
             conn.rollback()
             return redirect(url_for("game_details", game_table_id=game_table_id))

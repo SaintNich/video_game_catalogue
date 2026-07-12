@@ -73,7 +73,7 @@ def full_game_info(igdb_id: int, search_results: list = None) -> dict:
                 )
                 return {}
 
-        body = f"fields age_ratings.synopsis, age_ratings.organization.name, age_ratings.rating_category.rating, age_ratings.rating_content_descriptions.description, alternative_names.name, artworks.image_id, artworks.url, collections.games.name, collections.name, cover.image_id, cover.url, dlcs.name, expanded_games.name, expansions.name, external_games.name, external_games.uid, external_games.external_game_source.name, first_release_date, forks.name, game_modes.slug, game_status.status, game_type.type, genres.slug, involved_companies.company.name, involved_companies.developer, involved_companies.porting, involved_companies.publisher, involved_companies.supporting, multiplayer_modes.campaigncoop, multiplayer_modes.dropin, multiplayer_modes.lancoop, multiplayer_modes.offlinecoop, multiplayer_modes.offlinemax, multiplayer_modes.onlinecoop, multiplayer_modes.onlinemax, multiplayer_modes.splitscreen, name, parent_game.name, platforms.abbreviation, platforms.alternative_name, platforms.name, remakes.name, remasters.name, standalone_expansions.name, storyline, summary, themes.slug, version_parent.name, version_title, websites.url, websites.type.type; where id = {igdb_id}; sort id asc;"
+        body = f"fields age_ratings.synopsis, age_ratings.organization.name, age_ratings.rating_category.rating, age_ratings.rating_content_descriptions.description, alternative_names.name, artworks.image_id, collections.games.name, collections.name, cover.image_id, dlcs.name, expanded_games.name, expansions.name, external_games.name, external_games.uid, external_games.external_game_source.name, first_release_date, forks.name, game_modes.slug, game_status.status, game_type.type, genres.slug, involved_companies.company.name, involved_companies.developer, involved_companies.porting, involved_companies.publisher, involved_companies.supporting, multiplayer_modes.campaigncoop, multiplayer_modes.dropin, multiplayer_modes.lancoop, multiplayer_modes.offlinecoop, multiplayer_modes.offlinemax, multiplayer_modes.onlinecoop, multiplayer_modes.onlinemax, multiplayer_modes.splitscreen, name, parent_game.name, platforms.abbreviation, platforms.alternative_name, platforms.name, remakes.name, remasters.name, standalone_expansions.name, storyline, summary, themes.slug, version_parent.name, version_title, websites.url, websites.type.type; where id = {igdb_id}; sort id asc;"
 
         response = requests.post(IGDB_GAMES_ENDPOINT, headers=header, data=body)
         log.debug(
@@ -107,19 +107,26 @@ def update_games(full_game_result: dict) -> int:
             if full_game_result.get("alternative_names")
             else None
         )
+        version_title = (
+            full_game_result.get("version_title") if full_game_result.get("version_title") else None
+        )
+        version_og = (
+            full_game_result.get("version_parent").get("name") if full_game_result.get("version_parent") else None
+        )
         cover = (
-            full_game_result.get("cover").get("url")
+            full_game_result.get("cover").get("image_id")
             if full_game_result.get("cover")
             else None
         )
-        img_urls = (
-            [art.get("url") for art in full_game_result.get("artworks")]
+        img_ids = (
+            [art.get("image_id") for art in full_game_result.get("artworks")]
             if full_game_result.get("artworks")
             else None
         )
         summary = full_game_result.get("summary")
         story = full_game_result.get("storyline")
         release_date = full_game_result.get("first_release_date")
+        game_status = full_game_result.get("game_status").get("status") if full_game_result.get("game_status") else None
         game_type = (
             full_game_result.get("game_type").get("type")
             if full_game_result.get("game_type")
@@ -140,14 +147,10 @@ def update_games(full_game_result: dict) -> int:
             if full_game_result.get("themes")
             else None
         )
-        expansion_of = (
-            full_game_result.get("parent_game").get("name")
-            if full_game_result.get("parent_game")
-            else None
-        )
 
         rating_org = ""
         rating_cat = ""
+        rating_synops = ""
         rating_desc = []
 
         if full_game_result.get("age_ratings"):
@@ -166,6 +169,7 @@ def update_games(full_game_result: dict) -> int:
                     if rating.get("rating_category")
                     else None
                 )
+                rating_synops = rating.get("synopsis") if rating.get("synopsis") else None
                 rating_desc = (
                     [
                         desc.get("description")
@@ -181,40 +185,46 @@ def update_games(full_game_result: dict) -> int:
                 igdb_id, 
                 title,
                 alt_titles,
-                cover_url,
+                version_title,
+                version_parent,
+                cover_img,
                 images,
                 summary,
                 story,
                 release_date,
+                game_status,
                 game_type,
                 game_modes,
                 genres,
                 themes,
-                expansion_of,
                 age_rating_org,
                 age_rating_cat,
+                age_rating_synopsis,
                 age_rating_desc
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
             (
                 igdb_id,
                 title,
                 ", ".join(alt_titles) if alt_titles else None,
+                version_title if version_title else None,
+                version_og if version_og else None,
                 cover,
-                ", ".join(img_urls) if img_urls else None,
+                ", ".join(img_ids) if img_ids else None,
                 summary,
                 story,
                 dt.datetime.fromtimestamp(release_date).date().isoformat()
                 if release_date
                 else "unknown",
+                game_status if game_status else None,
                 game_type,
                 ", ".join(game_modes) if game_modes else None,
                 ", ".join(genres) if genres else None,
                 ", ".join(themes) if themes else None,
-                expansion_of,
                 rating_org if rating_org else None,
                 rating_cat if rating_cat else None,
+                rating_synops if rating_synops else None,
                 ", ".join(rating_desc) if rating_desc else None,
             ),
         )
@@ -595,6 +605,69 @@ def update_game_series(game_table_id: int, full_game_result: dict):
 
     else:
         log.info("Update to game_series table successful.")
+        conn.commit()
+
+    finally:
+        conn.close()
+
+
+def update_additional_game_content(game_table_id: int, full_game_result: dict):
+    conn = get_conn()
+
+    try:
+        parent_game = full_game_result.get("parent_game").get("name") if full_game_result.get("parent_game") else None
+        dl_content = [dlcs.get("name") for dlcs in full_game_result.get("dlcs")] if full_game_result.get("dlcs") else []
+        expanded_games = [expanded_game.get("name") for expanded_game in full_game_result.get("expanded_games")] if full_game_result.get("expanded_games") else []
+        game_expansions = [expansion.get("name") for expansion in full_game_result.get("expansions")] if full_game_result.get("expansions") else []
+        game_remakes = [remake.get("name") for remake in full_game_result.get("remakes")] if full_game_result.get("remakes") else []
+        game_remasters = [remaster.get("name") for remaster in full_game_result.get("remasters")] if full_game_result.get("remasters") else []
+        standalone_exps = [standalone.get("name") for standalone in full_game_result.get("standalone_expansions")] if full_game_result.get("standalone_expansions") else []
+        series_forks = [fork.get("name") for fork in full_game_result.get("forks")] if full_game_result.get("forks") else []
+
+        conn.execute(
+            """
+            INSERT OR IGNORE INTO additional_game_content (
+            game_table_id,
+            parent_game,
+            remakes,
+            remasters,
+            dl_content,
+            expansions,
+            expanded_games,
+            standalone_expansions,
+            series_forks
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+            (
+                game_table_id,
+                parent_game,
+                ", ".join(game_remakes) if game_remakes else None,
+                ", ".join(game_remasters) if game_remasters else None,
+                ", ".join(dl_content) if dl_content else None,
+                ", ".join(expanded_games) if expanded_games else None,
+                ", ".join(game_expansions) if game_expansions else None,
+                ", ".join(standalone_exps) if standalone_exps else None,
+                ", ".join(series_forks) if series_forks else None
+            )
+        )
+
+    except sqlite3.Error as e:
+        log.error(
+            f"An operation to the additional_game_content table failed: {type(e).__name__}: {e}"
+        )
+        conn.rollback()
+        return
+
+    except Exception as e:
+        log.error(
+            f"An unexpected error occurred in update_additional_game_content(). {type(e).__name__}: {e}"
+        )
+        conn.rollback()
+        return
+
+    else:
+        log.info("Update to additional_game_content table successful.")
         conn.commit()
 
     finally:
