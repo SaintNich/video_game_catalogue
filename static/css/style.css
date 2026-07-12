@@ -64,7 +64,8 @@ html {
 	margin: 4px;
 }
 
-.form-txt-box {
+.form-txt-box,
+.srch-selection {
 	background-color: #353839;
 	color: #f5f5f5;
 	width: 66%;
@@ -144,7 +145,7 @@ html {
     font-size: 18px;
 }
 
-.steam-games {
+.search-results {
     width: 80%;
     margin: 2rem auto;
     display: grid;
@@ -169,4 +170,26 @@ html {
     display: flex;
     align-items: center;
     height: 27px;
+}
+
+.srch-label.hltb {
+    justify-content: center;
+    margin: 4px;
+}
+
+.selection-set {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+}
+
+.search {
+    width: 80%;
+    margin: 2rem auto;
+}
+
+.search > form {
+    width: 80%;
+    margin: 0 auto;
 }

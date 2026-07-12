@@ -1,17 +1,26 @@
-<!doctype html>
-<head> </head>
-<body>
-	<ol>
-		{% for result in search_results %}
-		<li>
-			<form method="POST" action="{{ url_for('game_selection') }}">
-				<label for="game_selection">{{ result.game_title }} released in {{ result.release_year }}</label>
-				<input type="hidden" name="game_selection" value="{{ result.igdb_id }}, {{ result.game_title }}" />
-				<input type="hidden" name="steam_game_id" value="{{ steam_game_id }}" />
-				<input type="hidden" name="steam_game_playtime" value="{{ steam_game_playtime }}" />
-				<button type="submit">Select Game</button>
-			</form>
-		</li>
-		{% endfor %}
-	</ol>
-</body>
+{% extends "base.html" %}
+
+{% block title %}Search Results{% endblock %}
+
+{% block content %}
+<div class="close-btn">
+		<a href="{{ url_for('steam_sync') }}">X</a>
+</div>
+
+<h1 class="main-heading">Search Results</h1>
+
+<div class="search-results">
+	{% for result in search_results %}
+	<div class="srch-result">
+		<form method="POST" action="{{ url_for('game_selection') }}">
+			<label class="srch-label" for="game_selection">{{ result.game_title }} released in {{ result.release_year }}</label>
+			<input type="hidden" name="game_selection" value="{{ result.igdb_id }}, {{ result.game_title }}" />
+			<input type="hidden" name="steam_game_id" value="{{ steam_game_id }}" />
+			<input type="hidden" name="steam_game_playtime" value="{{ steam_game_playtime }}" />
+			<button class="sub-btn" type="submit">Select Game</button>
+		</form>
+	</div>
+	{% endfor %}
+</div>
+
+{% endblock %}

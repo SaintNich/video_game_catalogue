@@ -4,26 +4,24 @@
 
 {% block content %}
 
-<body>
-	<div class="close-btn">
-		<a href="{{ url_for('index') }}">X</a>
-	</div>
-	<h1 class="main-heading">Steam Game Review</h1>
+<div class="close-btn">
+	<a href="{{ url_for('index') }}">X</a>
+</div>
+<h1 class="main-heading">Steam Game Review</h1>
 
-	<div class="steam-games">
-		{% for steam_game in steam_games_not_in_db %}
-		<div class="srch-result">
-			<form method="POST" action="{{ url_for('steam_search') }}">
-				<label class="srch-label" for="steam_selection">{{ steam_game.steam_game_name }}</label>
-				<input
-					type="hidden"
-					name="steam_selection"
-					value="{{ steam_game.steam_game_id }}, {{ steam_game.steam_game_name }}, {{ steam_game.steam_game_playtime }}" />
-				<button class="sub-btn" type="submit">Select Game</button>
-			</form>
-		</div>
-		{% endfor %}
+<div class="search-results">
+	{% for steam_game in steam_games_not_in_db %}
+	<div class="srch-result">
+		<form method="POST" action="{{ url_for('steam_search') }}">
+			<label class="srch-label" for="steam_selection">{{ steam_game.steam_game_name }}</label>
+			<input
+				type="hidden"
+				name="steam_selection"
+				value="{{ steam_game.steam_game_id }}, {{ steam_game.steam_game_name }}, {{ steam_game.steam_game_playtime }}" />
+			<button class="sub-btn" type="submit">Select Game</button>
+		</form>
 	</div>
-</body>
+	{% endfor %}
+</div>
 
 {% endblock %}

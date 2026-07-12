@@ -1,10 +1,22 @@
-<!doctype html>
-<head> </head>
-<body>
+{% extends "base.html" %}
+
+{% block title %}Steam Search{% endblock %}
+
+{% block content %}
+
+<div class="close-btn">
+		<a href="{{ url_for('steam_sync') }}">X</a>
+</div>
+
+<h1 class="main-heading">Steam Search</h1>
+
+<div class="search">
 	<form method="POST" , action="{{ url_for('steam_search') }}">
-		<input type="text" name="steam_search" value="{{ steam_game_name }}" />
+		<input class="form-txt-box" type="text" name="steam_search" value="{{ steam_game_name }}" />
 		<input type="hidden" name="steam_game_id" value="{{ steam_game_id }}" />
 		<input type="hidden" name="steam_game_playtime" value="{{ steam_game_playtime }}" />
-		<button type="submit">Search</button>
+		<button class="sub-btn" type="submit">Search</button>
 	</form>
-</body>
+</div>
+
+{% endblock %}

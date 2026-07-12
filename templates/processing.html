@@ -1,18 +1,29 @@
-<!DOCTYPE html>
-<head>
+{% extends "base.html" %}
 
-</head>
-<body>
+{% block title %}HowLongToBeat Selection{% endblock %}
+
+{% block content %}
+
+<div class="close-btn">
+		<a href="{{ url_for('index') }}">X</a>
+</div>
+
+<h1 class="main-heading">HowLongToBeat Selection</h1>
+
+<div class="search">
     <form method="POST", action="{{ url_for('processing') }}">
         <input type="hidden" name="game_table_id" value="{{ game_table_id }}">
 
-        <label for="hltb_selection">Choose which game to get the HowLongToBeat data for:</label>
-            <select name="hltb_selection">
+        <label class="hltb srch-label" for="hltb_selection">Choose which game to get the HowLongToBeat data for:</label>
+        <div class="selection-set">
+            <select id="hltb_selection" class="srch-selection" name="hltb_selection">
                 {% for result in hltb_results %}
                 <option value="{{ result.game_id }}, {{ result.main_story }}, {{ result.main_extra }}, {{ result.completionist }}, {{ result.all_styles }}">{{ result.game_name }} released in {{ result.release_world }}</option>
                 {% endfor %}
             </select>
-        </ol>
-        <button type="submit">Submit</button>
+            <button class="sub-btn" type="submit">Submit</button>
+        </div>
     </form>
-</body>
+</div>
+
+{% endblock %}
