@@ -123,3 +123,50 @@ html {
     object-fit: contain;
     border-radius: 1rem;
 }
+
+.close-btn {
+    height: 20px;
+    width: 20px;
+    background-color: #f5f5f5;
+    border: 2px outset #f5f5f5;
+    border-radius: 0.5rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: fixed;
+    top: 20px;
+    right: 20px;
+}
+
+.close-btn > a {
+    text-decoration: none;
+    font-family: monospace;
+    font-size: 18px;
+}
+
+.steam-games {
+    width: 80%;
+    margin: 2rem auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 1rem;
+    justify-items: center;
+}
+
+.srch-result {
+    display: flex;
+    width: 90%;
+}
+
+.srch-result > form {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.srch-label {
+    display: flex;
+    align-items: center;
+    height: 27px;
+}
