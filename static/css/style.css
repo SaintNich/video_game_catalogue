@@ -65,7 +65,12 @@ html {
 }
 
 .form-txt-box,
-.srch-selection {
+.srch-selection,
+.cat-stat-select > select,
+.form-date-select > input[type=date],
+.form-hrs-input > input[type=number],
+.form-rating > input[type=number],
+.form-notes > textarea {
 	background-color: #353839;
 	color: #f5f5f5;
 	width: 66%;
@@ -134,7 +139,7 @@ html {
     display: flex;
     justify-content: center;
     align-items: center;
-    position: fixed;
+    position: absolute;
     top: 20px;
     right: 20px;
 }
@@ -192,4 +197,369 @@ html {
 .search > form {
     width: 80%;
     margin: 0 auto;
+}
+
+.update-btn {
+    justify-self: center;
+}
+
+.game-section {
+    width: 90%;
+    display: flex;
+    justify-content: space-evenly;
+    margin: 0 auto 2rem;
+}
+
+.game-details {
+    width: 45%;
+    margin-bottom: 2rem;
+}
+
+.section-hdg {
+    margin-bottom: 8px;
+}
+
+.pairing {
+    display: flex;
+    width: 100%;
+    gap: 1rem;
+    margin: 8px 0;
+}
+
+.pairing > p {
+    width: 70%;
+    margin: 0;
+}
+
+.sub-hdg {
+    font-size: 1rem;
+    width: 33%;
+    margin: 0;
+}
+
+.sub-hdg.centered {
+    margin: 0 auto;
+}
+
+.multiplayer > p {
+    padding-left: 1.5rem;
+    margin-top: 4px;
+    margin-bottom: 4px;
+}
+
+.multi-types {
+    margin-top: 4px;
+    margin-bottom: 4px;
+    list-style-type: none;
+}
+
+.small-table {
+    margin-top: 2rem;
+    text-align: left;
+    border-spacing: 0;
+}
+
+.small-table-title {
+    width: 100%;
+    background-color: #f5f5f5;
+    border: 2px solid #f5f5f5;
+    border-radius: 1rem 1rem 0 0;
+    color: #343434;
+    text-align: center;
+}
+
+.small-table-head {
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+}
+
+.small-table-data {
+    vertical-align: text-top;
+}
+
+.small-table-head.col-1,
+.small-table-data.col-1 {
+    width: 30%;
+    padding-left: 1rem;
+    padding-right: 1rem;
+}
+
+.small-table-data.col-1,
+.small-table-data.col-2 {
+    padding-left: 2.5rem;
+    padding-right: 2.5rem;
+}
+
+.game-images {
+    width: 45%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.disp-image {
+    margin: 1rem 0;
+}
+
+.art-gallery {
+    margin: 1rem;
+    display: flex;
+    padding: 1rem;
+    height: 90px;
+    max-width: 100%;
+    gap: 1rem;
+}
+
+.game-story {
+    width: 80%;
+    margin: 0 auto 2rem;
+}
+
+.game-story > h2 {
+    background-color: #f5f5f5;
+    color: #343434;
+    border-radius: 1rem 1rem 0 0;
+    text-align: center;
+    margin-top: 0;
+    padding: 8px;
+}
+
+.game-story > p {
+    margin: 1rem 2rem 1rem;
+}
+
+.story-summary {
+    white-space: pre-line;
+}
+
+.relationship-section {
+    width: 90%;
+    margin: 0 auto 2rem;
+}
+
+.relationship-section > h2 {
+    text-align: center;
+}
+
+.timing-details {
+    display: flex;
+    gap: 1rem;
+}
+
+.relationship-details,
+.hltb-details {
+    width: 45%;
+    margin: 0 auto;
+}
+
+.relationship-details > h3,
+.hltb-details > h3 {
+    width: 100%;
+    text-align: center;
+}
+
+.relationship-details > .pairing > p,
+.hltb-details > .pairing > p {
+    text-align: end;
+}
+
+.relationship-details > .pairing > .sub-hdg,
+.hltb-details > .pairing > .sub-hdg {
+    width: 80%;
+}
+
+.series-and-expansions {
+    width: 90%;
+    margin: 0 auto 2rem;
+}
+
+.small-table.series {
+    width: 45%;
+}
+
+.small-table.series > tbody > tr > .small-table-head,
+.small-table.series > tbody > tr > .small-table-data {
+    width: 50%;
+    text-align: center;
+}
+
+.platform-related {
+    width: 60%;
+    margin: 0 auto 2rem;
+}
+
+.platform-related .section-hdg {
+    text-align: center;
+}
+
+.all-platforms {
+    display: flex;
+}
+
+.all-platforms > div > h3 {
+    margin: 0 auto;
+}
+
+.available-platforms,
+.platforms-owned-on,
+.platforms-played-on {
+    width: 33%;
+}
+
+.available-platforms > ul,
+.platforms-owned-on > ul,
+.platforms-played-on > ul {
+    margin-top: 8px;
+    list-style-type: none;
+}
+
+.companies-and-websites {
+    width: 80%;
+    margin: 0 auto 2rem;
+    display: flex;
+    justify-content: space-evenly;
+}
+
+.companies,
+.websites {
+    width: 45%;
+}
+
+.websites > tbody > tr > .small-table-data.col-2 > a {
+    color: #f5f5f5;
+    text-decoration: none;
+}
+
+.websites > tbody > tr > .small-table-data.col-2 > a:hover {
+    text-decoration: underline;
+}
+
+.small-table.companies {
+    height: fit-content;
+}
+
+.small-table.websites > tbody > tr > .small-table-head,
+.small-table.websites > tbody > tr > .small-table-data,
+.small-table.companies > tbody > tr > .small-table-head,
+.small-table.companies > tbody > tr > .small-table-data {
+    padding-left: 1rem;
+    padding-right: 1rem;
+}
+
+.update-game-form {
+    width: 90%;
+    margin: 0 auto;
+}
+
+.form-inputs {
+    display: flex;
+    justify-content: space-evenly;
+    margin-top: 2rem;
+}
+
+.cont-support,
+.owned-form,
+.played-form,
+.cat-status,
+.rtng-notes {
+    width: 25%;
+    padding: 8px;
+    border: 2px solid #f5f5f5;
+    border-radius: 1rem;
+}
+
+.cont-support > p,
+.owned-form > p,
+.played-form > p {
+    margin: 8px;
+    font-weight: bolder;
+    text-align: center;
+}
+
+.radio-options {
+    display: flex;
+    justify-content: space-evenly;
+    margin-bottom: 8px;
+    gap: 2rem;
+}
+
+.radio-grp {
+    display: flex;
+    flex-direction: row-reverse;
+}
+
+.radio-grp input[type=radio] {
+    margin: 0 8px 0 0;
+}
+
+.owned-options,
+.played-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-row-gap: 8px;
+    align-items: center;
+}
+
+.chkbx-grp {
+    display: flex;
+    padding: 0 8px 0 8px;
+    justify-content: space-between;
+}
+
+.cat-status,
+.rtng-notes {
+    width: 80%;
+    margin: 2rem auto;
+    padding: 2rem;
+}
+
+.cat-stat-select,
+.form-date-select,
+.form-hrs-input,
+.form-rating,
+.form-notes {
+    width: 50%;
+    margin: 0 auto 1rem;
+    display: flex;
+    justify-content: space-between;
+}
+
+.cat-stat-select > select {
+    max-width: 325px;
+    font-family: inherit;
+    height: 28px;
+    border-width: 2px;
+    border-style: inset;
+}
+
+.form-date-select > input[type=date],
+.form-hrs-input > input[type=number],
+.form-rating > input[type=number] {
+    max-width: 305px;
+    font-family: inherit;
+    height: 24px;
+}
+
+.form-hrs-input > input[type=number] {
+    height: 22px;
+}
+
+.form-notes {
+    flex-direction: column;
+    gap: 8px;
+}
+
+.form-notes > textarea {
+    width: 100%;
+    height: 8rem;
+    font-family: -webkit-body;
+    border-width: 2px;
+    border-style: inset;
+}
+
+.btn-container {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }

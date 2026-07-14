@@ -1,83 +1,128 @@
-<!doctype html>
-<head> </head>
-<body>
-	<form method="POST" , action="{{ url_for('update_game_details') }}">
+{% extends "base.html" %}
+
+{% block title %}Update Game Details {{ game_title }}{% endblock %}
+
+{% block content %}
+
+	<div class="close-btn">
+		<a href="{{ url_for('game_details', game_table_id=game_table_id) }}">X</a>
+	</div>
+
+	<h1 class="main-heading">Update Details: {{ game_title }}</h1>
+
+	<form class="update-game-form" method="POST" , action="{{ url_for('update_game_details') }}">
 		<input type="hidden" name="game_table_id" value="{{ game_table_id }}" />
+		<div class="form-inputs">
+			<div class="cont-support">
+				<p>Does this game have controller support?</p>
+				<div class="radio-options">
+					<div class="radio-grp">
+						<label for="controller_support">Controller Support</label>
+						<input type="radio" id="controller_support" name="controller_support" value="1" />
+					</div>
+					<div class="radio-grp">
+						<label for="no_controller_support">No Controller Support</label>
+						<input type="radio" id="controller_support" name="controller_support" value="0" />
+					</div>
+				</div>
+			</div>
+			<div class="owned-form">
+				<p>Owned on:</p>
+				<div class="owned-options">
+					{% for value in ownership_values %}
+					<div class="chkbx-grp">
+						<label for="owned_platform">{{ value.platform }}</label>
+						{% if value.owned %}
+						<input type="checkbox" id="owned_platform" name="owned_platform" value="{{ value.platform }}" checked />
+						{% else %}
+						<input type="checkbox" id="owned_platform" name="owned_platform" value="{{ value.platform }}" />
+						{% endif %}
+					</div>
+					{% endfor %}
+				</div>
+			</div>
+			<div class="played-form">
+				<p>Played on:</p>
+				<div class="played-options">
+					{% for value in played_on_values %}
+					<div class="chkbx-grp">
+						<label for="played_platform">{{ value.platform }}</label>
+						{% if value.played %}
+						<input type="checkbox" id="played_platform" name="played_platform" value="{{ value.platform }}" checked />
+						{% else %}
+						<input type="checkbox" id="played_platform" name="played_platform" value="{{ value.platform }}" />
+						{% endif %}
+					</div>
+					{% endfor %}
+				</div>
+			</div>
+		</div>
 
-		<a href="{{ url_for('game_details', game_table_id=game_table_id) }}">Cancel</a>
+		<div class="cat-status">
+			<div class="cat-stat-select">
+				<label for="catalog_status">Catalog Status: </label>
+				<select id="catalog_status" name="catalog_status">
+					<option value="{{ cur_relationship_values.catalog_status }}">
+						{{ cur_relationship_values.catalog_status }}
+					</option>
+					{% if cur_relationship_values.catalog_status != 'Backlog' %}
+					<option value="Backlog">Backlog</option>
+					{% endif %}
+					{% if cur_relationship_values.catalog_status != 'In-Progress' %}
+					<option value="In-Progress">In-Progress</option>
+					{% endif %}
+					{% if cur_relationship_values.catalog_status != 'Completed Main Story' %}
+					<option value="Completed Main Story">Completed Main Story</option>
+					{% endif %}
+					{% if cur_relationship_values.catalog_status != 'Completed Everything' %}
+					<option value="Completed Everything">Completed Everything</option>
+					{% endif %}
+					{% if cur_relationship_values.catalog_status != 'Abandoned' %}
+					<option value="Abandoned">Abandoned</option>
+					{% endif %}
+					{% if cur_relationship_values.catalog_status != 'On Hold' %}
+					<option value="On Hold">On Hold</option>
+					{% endif %}
+					{% if cur_relationship_values.catalog_status != 'New Game+' %}
+					<option value="New Game+">New Game+</option>
+					{% endif %}
+					{% if cur_relationship_values.catalog_status != 'Wishlisted' %}
+					<option value="Wishlisted">Wishlisted</option>
+					{% endif %}
+				</select>
+			</div>
+			<div class="form-date-select">
+				<label for="date_main" value="{{ cur_relationship_values.date_main_completed }}"
+					>Date main story completed:
+				</label>
+				<input type="date" id="date_main" name="date_main" />
+			</div>
+			<div class="form-date-select">
+				<label for="date_full">Date game 100% completed: </label>
+				<input type="date" id="date_full" name="date_full" value="{{ cur_relationship_values.date_completed }}" />
+			</div>
+			<div class="form-hrs-input">
+				<label for="hours_played">Hours played: </label>
+				<input type="number" id="hours_played" name="hours_played" value="{{ cur_relationship_values.hours_played }}" />
+			</div>
+		</div>
 
-		<p>Does this game have controller support?</p>
-		<label for="controller_support">Controller Support</label>
-		<input type="radio" id="controller_support" name="controller_support" value="1" />
-		<label for="no_controller_support">No Controller Support</label>
-		<input type="radio" id="controller_support" name="controller_support" value="0" />
+		<div class="rtng-notes">
+			<div class="form-rating">
+				<label for="rating">Rating: </label>
+				<input type="number" id="rating" name="rating" min="0" max="5" value="{{ cur_relationship_values.rating }}" />
+			</div>
+			<div class="form-notes">
+				<label for="user_notes">Notes: </label>
+				<textarea
+					name="user_notes"
+					id="user_notes"
+					placeholder="Enter some notes about the game"
+					value="{{ cur_relationship_values.user_notes }} if {{ cur_relationship_values.user_notes }} else ''"></textarea>
+			</div>
+		</div>
 
-		<p>Owned on:</p>
-		{% for value in ownership_values %}
-		<label for="owned_platform">{{ value.platform }}</label>
-		{% if value.owned %}
-		<input type="checkbox" id="owned_platform" name="owned_platform" value="{{ value.platform }}" checked />
-		{% else %}
-		<input type="checkbox" id="owned_platform" name="owned_platform" value="{{ value.platform }}" />
-		{% endif %} {% endfor %}
-
-		<p>Played on:</p>
-		{% for value in played_on_values %}
-		<label for="played_platform">{{ value.platform }}</label>
-		{% if value.played %}
-		<input type="checkbox" id="played_platform" name="played_platform" value="{{ value.platform }}" checked />
-		{% else %}
-		<input type="checkbox" id="played_platform" name="played_platform" value="{{ value.platform }}" />
-		{% endif %} {% endfor %}
-
-		<label for="catalog_status">Catalog Status: </label>
-		<select id="catalago_status" name="catalog_status">
-			<option value="{{ cur_relationship_values.catalog_status }}">
-				{{ cur_relationship_values.catalog_status.title()|replace('_', ' ') }}
-			</option>
-
-			{% if cur_relationship_values.catalog_status != 'Backlog' %}
-			<option value="Backlog">Backlog</option>
-			{% endif %} {% if cur_relationship_values.catalog_status != 'In-Progress' %}
-			<option value="In-Progress">In-Progress</option>
-			{% endif %} {% if cur_relationship_values.catalog_status != 'Completed Main Story' %}
-			<option value="Completed Main Story">Completed Main Story</option>
-			{% endif %} {% if cur_relationship_values.catalog_status != 'Completed Everything' %}
-			<option value="Completed Everything">Completed Everything</option>
-			{% endif %} {% if cur_relationship_values.catalog_status != 'Abandoned' %}
-			<option value="Abandoned">Abandoned</option>
-			{% endif %} {% if cur_relationship_values.catalog_status != 'On Hold' %}
-			<option value="On Hold">On Hold</option>
-			{% endif %} {% if cur_relationship_values.catalog_status != 'New Game+' %}
-			<option value="New Game+">New Game+</option>
-			{% endif %} {% if cur_relationship_values.catalog_status != 'Wishlisted' %}
-			<option value="Wishlisted">Wishlisted</option>
-			{% endif %}
-		</select>
-
-		<label for="date_main" value="{{ cur_relationship_values.date_main_completed }}"
-			>Date main story completed:
-		</label>
-		<input type="date" id="date_main" name="date_main" />
-
-		<label for="date_full">Date game 100% completed: </label>
-		<input type="date" id="date_full" name="date_full" value="{{ cur_relationship_values.date_completed }}" />
-
-		<label for="hours_played">Hours played: </label>
-		<input type="number" id="hours_played" name="hours_played" value="{{ cur_relationship_values.hours_played }}" />
-
-		<label for="rating">Rating: </label>
-		<input type="number" id="rating" name="rating" min="0" max="5" value="{{ cur_relationship_values.rating }}" />
-
-		<label for="user_notes">Notes: </label>
-		<textarea
-			name="user_notes"
-			id="user_notes"
-			rows="4"
-			cols="50"
-			placeholder="Enter some notes about the game"
-			value="{{ cur_relationship_values.user_notes }} if {{ cur_relationship_values.user_notes }} else ''"></textarea>
-
-		<button type="submit">Update</button>
+		<div class="btn-container"><button class="sub-btn" type="submit">Update</button></div>
 	</form>
-</body>
+
+{% endblock %}

@@ -1,161 +1,370 @@
-<!doctype html>
-<head> </head>
-<body>
-	<a href="{{ url_for('index') }}">Main</a>
-	<form method="POST" action="{{ url_for('game_details_form') }}">
+{% extends "base.html" %}
+
+{% block title %}{{ core_game_dict.game_title }}{% endblock %}
+
+{% block content %}
+	
+	<div class="close-btn">
+		<a href="{{ url_for('index') }}">X</a>
+	</div>
+
+	<h1 class="main-heading">{{ core_game_dict.game_title }}</h1>
+	<form class="update-btn" method="POST" action="{{ url_for('game_details_form') }}">
 		<input type="hidden" name="game_table_id" value="{{ game_table_id }}" />
+		<input type="hidden" name="game_title" value="{{ core_game_dict.game_title }}">
 		<input type="hidden" name="platform_dict" value="{{ platform_dict }}" />
-		<button type="submit">Update Game</button>
+		<button class="sub-btn" type="submit">Update Game</button>
 	</form>
 
-	<section>
-		<h2>{{ core_game_dict.game_title }}</h2>
-		<p>Original Release Date: {{ core_game_dict.release_date }}</p>
-		{% if core_game_dict.controller_supported %}
-		<p>Controller Supported: {{ core_game_dict.controller_supported }}</p>
-		{% endif %} {% if core_game_dict.expansion_of %}
-		<p>Main Game Title (if expansion): {{ core_game_dict.expansion_of }}</p>
-		{% endif %} {% if relationship_dict.rating %}
-		<p>Personal Game Rating: {{ relationship_dict.rating }}</p>
-		{% endif %} {% if relationship_dict.user_notes %}
-		<p>Notes: {{ relationship_dict.user_notes }}</p>
-		{% endif %}
+	<section class="game-section">
+		<div class="game-details">
+			<h2 class="section-hdg">Game Details</h2>
+
+			<div class="pairing">
+				<h3 class="sub-hdg">Original Release:</h3>
+				<p>{{ core_game_dict.release_date }}</p>
+			</div>
+
+			{% if core_game_dict.version_title %}
+			<div class="pairing">	
+				<h3 class="sub-hdg">Version Title:</h3>
+				<p>{{ core_game_dict.version_title }}</p>
+			</div>
+			{% endif %}
+
+			{% if core_game_dict.version_parent %}
+			<div class="pairing">
+				<h3 class="sub-hdg">Version's Parent Game:</h3>
+				<p>{{ core_game_dict.version_parent }}</p>
+			</div>
+			{% endif %}
+
+			<div class="pairing">
+				<h3 class="sub-hdg">Game Summary:</h3>
+				<p class="story-summary">{{ core_game_dict.summary }}</p>
+			</div>
+			
+			{% if core_game_dict.game_status %}
+			<div class="pairing">
+				<h3 class="sub-hdg">Game Status:</h3>
+				<p>{{ core_game_dict.game_status }}</p>
+			</div>
+			{% endif %}
+
+			<div class="pairing">
+				<h3 class="sub-hdg">Type of Game:</h3>
+				<p>{{ core_game_dict.game_type }}</p>
+			</div>
+
+			<div class="pairing">
+				<h3 class="sub-hdg">Game Modes:</h3>
+				<p>{{ core_game_dict.game_modes | title }}</p>
+			</div>
+
+			<div class="pairing">
+				<h3 class="sub-hdg">Genres:</h3>
+				<p>{{ core_game_dict.genres | title }}</p>
+			</div>
+
+			<div class="pairing">
+				<h3 class="sub-hdg">Themes:</h3>
+				<p>{{ core_game_dict.themes | title }}</p>
+			</div>
+
+			<div class="pairing">
+				<h3 class="sub-hdg">Controller Supported:</h3>
+				{% if core_game_dict.controller_supported == 1 %}
+				<p>Yes, Supported</p>
+				{% elif core_game_dict.controller_supported == 0 %}
+				<p>No, Not Supported</p>
+				{% else %}
+				<p>Unknown</p>
+				{% endif %}
+			</div>
+
+			{% if multiplayer_dict %}
+			<div class="multiplayer">
+				<h3 class="sub-hdg">Multiplayer Options:</h3>
+
+				<ul class="multi-types">
+					{% if multiplayer_dict.campaigncoop %}
+					<li>Campaign Co-Op</li>
+					{% endif %}
+					{% if multiplayer_dict.dropin %}
+					<li>Drop-In</li>
+					{% endif %}
+					{% if multiplayer_dict.lancoop %}
+					<li>Local LAN Co-Op</li>
+					{% endif %}
+					{% if multiplayer_dict.offlinecoop %}
+					<li>Offline Co-Op</li>
+					{% endif %}
+					{% if multiplayer_dict.onlinecoop %}
+					<li>Online Co-Op</li>
+					{% endif %}
+					{% if multiplayer_dict.splitscreen %}
+					<li>Splitscreen</li>
+					{% endif %}
+					{% if multiplayer_dict.onlinesplitscreen %}
+					<li>Splitscreen Online</li>
+					{% endif %}
+				</ul>
+				<p>Maximum players online: {{ multiplayer_dict.onlinemax }}</p>
+				<p>Maximum players offline: {{ multiplayer_dict.offlinemax }}</p>
+			</div>
+			{% else %}
+			<div class="pairing">
+				<h3 class="sub-hdg">Multiplayer Options:</h3>
+				<p>None</p>
+			</div>
+			{% endif %}
+
+			<table class="small-table">
+				<thead>
+					<tr>
+						<th class="small-table-title" colspan="2">Age Ratings</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<th class="small-table-head col-1">Organization:</th>
+						<th class="small-table-head col-2">Category:</th>
+					</tr>
+					<tr>
+						<td class="small-table-data col-1">{{ core_game_dict.age_rating_org }}</td>
+						<td class="small-table-data col-2">{{ core_game_dict.age_rating_cat }}</td>
+					</tr>
+					<tr>
+						<th class="small-table-head col-1">Synopsis:</th>
+						<th class="small-table-head col-2">Description:</th>
+					</tr>
+					<tr>
+						<td class="small-table-data col-1">{{ core_game_dict.age_rating_synopsis }}</td>
+						<td class="small-table-data col-2">{{ core_game_dict.age_rating_desc }}</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+
+		<div class="game-images">
+			<div class="disp-image">
+				<img src="//images.igdb.com/igdb/image/upload/t_cover_big/{{ core_game_dict.cover_img }}.webp" alt="Cover art for {{ core_game_dict.game_title}}">
+			</div>
+
+			<div class="art-gallery">
+				{% for image in core_game_dict.images %}
+				<img src="//images.igdb.com/igdb/image/upload/t_cover_big/{{ image }}.webp">
+				{% endfor %}
+			</div>
+		</div>
 	</section>
 
-	<section>
-		<h3>Current Catalog Status</h3>
-		<p>{{ relationship_dict.catalog_status.title()|replace('_',' ') }}</p>
-	</section>
-
-	<section>
-		{% if relationship_dict.hours_played or relationship_dict.date_main_completed or
-		relationship_dict.date_completed %}
-		<h3>Game Completion Status</h3>
-		{% if relationship_dict.hours_played %}
-		<p>Time played: {{ relationship_dict.hours_played }}</p>
-		{% endif %} {% if relationship_dict.date_main_completed %}
-		<p>Date main storyline complete: {{ relationship_dict.date_main_completed }}</p>
-		{% endif %} {% if relationship_dict.date_completed %}
-		<p>Date game fully completed: {{ relationship_dict.date_completed }}</p>
-		{% endif %} {% endif %}
-	</section>
-
-	{% if hltb_dict %}
-	<section>
-		<h3>HowLongToBeat Data</h3>
-		<p>Main Story: {{ hltb_dict.main_story }} hours</p>
-		<p>Main Story + Extras: {{ hltb_dict.main_extras }} hours</p>
-		<p>Full Completion: {{ hltb_dict.completionist }} hours</p>
-		<p>All Play Styles: {{ hltb_dict.all_play_styles }} hours</p>
-	</section>
-	{% endif %} {% if series_dict %}
-	<section>
-		<h3>Series Information</h3>
-		{% for series in series_dict %}
-		<p>{{ series.series_name }}: ({{ series.total_games_in_series }} games in series)</p>
-		{% endfor %}
+	{% if core_game_dict.story %}
+	<section class="game-story">
+		<h2 class="section-hdg">Full Game Story</h2>
+		<p class="story-summary">{{ core_game_dict.story }}</p>
 	</section>
 	{% endif %}
 
-	<section>
-		<h3>Websites</h3>
-		<ul>
-			{% for website in website_dict %}
-			<li>
-				{{ website.website_type }}:
-				<a href="{{ website.website_url }}" target="_blank">{{ website.website_url }}</a>
-			</li>
-			{% endfor %}
-		</ul>
+	<section class="relationship-section">
+		<h2 class="section-hdg">Timing Details for {{ core_game_dict.game_title }}</h2>
+		
+		<div class="timing-details">
+			<div class="relationship-details">
+				<h3 class="sub-hdg">Personal Timing:</h3>
+				<div class="pairing">
+					<h4 class="sub-hdg">Catalog Status:</h4>
+					<p>{{ relationship_dict.catalog_status | title }}</p>
+				</div>
+
+				<div class="pairing">
+					<h4 class="sub-hdg">Date Added:</h4>
+					<p>{{ relationship_dict.date_added }}</p>
+				</div>
+
+				<div class="pairing">
+					<h4 class="sub-hdg">Time Played:</h4>
+					{% if relationship_dict.hours_played %}
+					<p>{{ relationship_dict.hours_played }}</p>
+					{% else %}
+					<p>Not Provided</p>
+					{% endif %}
+				</div>
+
+				<div class="pairing">
+					<h4 class="sub-hdg">Main Story Completed on:</h4>
+					{% if relationship_dict.date_main_completed %}
+					<p>{{ relationship_dict.date_main_completed }}</p>
+					{% else %}
+					<p>Not Completed</p>
+					{% endif %}
+				</div>
+
+				<div class="pairing">
+					<h4 class="sub-hdg">100% Completed on:</h4>
+					{% if relationship_dict.date_completed %}
+					<p>{{ relationship_dict.date_completed }}</p>
+					{% else %}
+					<p>Not Completed</p>
+					{% endif %}
+				</div>
+			</div>
+
+			<div class="hltb-details">
+				{% if hltb_dict %}
+				<h3 class="sub-hdg">HowLongToBeat Data</h3>
+				<div class="pairing">
+					<h4 class="sub-hdg">Main Story:</h4>
+					<p>{{ hltb_dict.main_story }} hours</p>
+				</div>
+
+				<div class="pairing">
+					<h4 class="sub-hdg">Main Story + Extras:</h4>
+					<p>{{ hltb_dict.main_extras }} hours</p>
+				</div>
+
+				<div class="pairing">
+					<h4 class="sub-hdg">Full Completionist:</h4>
+					<p>{{ hltb_dict.completionist }} hours</p>
+				</div>
+
+				<div class="pairing">
+					<h4 class="sub-hdg">All Play Styles:</h4>
+					<p>{{ hltb_dict.all_play_styles }} hours</p>
+				</div>
+				{% endif %}
+			</div>
+		</div>
 	</section>
 
-	<section>
-		<h3>Platforms</h3>
-		<ul>
-			{% for platform in platform_dict %}
-			<li>{{ platform.platform }}</li>
-			{% endfor %}
-		</ul>
-		{% if user_platform_own_dict %}
-		<h4>Owned On:</h4>
-		<ul>
-			{% for platform in user_platform_own_dict %}
-			<li>{{ platform.owned }}</li>
-			{% endfor %}
-		</ul>
-		{% endif %} {% if user_played_on_dict %}
-		<h4>Played On:</h4>
-		<ul>
-			{% for platform in user_played_on_dict %}
-			<li>{{ platform.played }}</li>
-			{% endfor %}
-		</ul>
+	<section class="series-and-expansions">
+		{% if series_dict %}
+		<table class="small-table series">
+			<thead>
+				<tr>
+					<th class="small-table-title" colspan="2">Series Information</th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr>
+					<th class="small-table-head col-1">Series Name</th>
+					<th class="small-table-head col-2"># of Games in Series</th>
+				</tr>
+				{% for series in series_dict %}
+				<tr>
+					<td class="small-table-data col-1">{{ series.series_name }}</td>
+					<td class="small-table-data col-2">{{ series.total_games_in_series }}</td>
+				</tr>
+				{% endfor %}
+			</tbody>
+		</table>
+		{% endif %}
+		{% if adl_content_dict %}
+		<table class="small-table addl">
+			<thead>
+				<tr>
+					<th class="small-table-title" colspan="8">Additional Content</th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr>
+					<th class="small-table-head col-1">Parent Game</th>
+					<th class="small-table-head col-2">Remakes</th>
+					<th class="small-table-head col-3">Remasters</th>
+					<th class="small-table-head col-4">Downloadable Content</th>
+					<th class="small-table-head col-5">Expansions</th>
+					<th class="small-table-head col-6">Expanded Games</th>
+					<th class="small-table-head col-7">Standalone Expansions</th>
+					<th class="small-table-head col-8">Series Forks</th>
+				</tr>
+				<tr>
+					<td class="small-table-data col-1">{{ adl_content_dict.parent_game }}</td>
+					<td class="small-table-data col-2">{{ adl_content_dict.remakes }}</td>
+					<td class="small-table-data col-3">{{ adl_content_dict.remasters }}</td>
+					<td class="small-table-data col-4">{{ adl_content_dict.dl_content }}</td>
+					<td class="small-table-data col-5">{{ adl_content_dict.expansions }}</td>
+					<td class="small-table-data col-6">{{ adl_content_dict.expanded_games }}</td>
+					<td class="small-table-data col-7">{{ adl_content_dict.standalone_expansions }}</td>
+					<td class="small-table-data col-8">{{ adl_content_dict.series_forks }}</td>
+				</tr>
+			</tbody>
+		</table>
 		{% endif %}
 	</section>
 
-	<section>
-		<h3>Genres</h3>
-		<ul>
-			{% for genre in core_game_dict.genres.split(', ') %}
-			<li>{{ genre.title() }}</li>
-			{% endfor %}
-		</ul>
+	<section class="platform-related">
+		<h2 class="section-hdg">Platform Information</h2>
+		<div class="all-platforms">
+			<div class="available-platforms">
+				<h3 class="sub-hdg">Available On:</h3>
+				<ul>
+					{% for platform in platform_dict %}
+					<li>{{ platform.platform }}</li>
+					{% endfor %}
+				</ul>
+			</div>
+
+			<div class="platforms-owned-on">
+				<h3 class="sub-hdg">Owned On:</h3>
+				<ul>
+					{% for platform in user_platform_own_dict %}
+					<li>{{ platform.owned }}</li>
+					{% endfor %}
+				</ul>
+			</div>
+
+			<div class="platforms-played-on">
+				<h3 class="sub-hdg">Played On:</h3>
+				<ul>
+					{% for platform in user_played_on_dict %}
+					<li>{{ platform.played }}</li>
+					{% endfor %}
+				</ul>
+			</div>
+		</div>
 	</section>
 
-	<section>
-		<h3>Related Companies</h3>
-		<h4>Publisher</h4>
-		<ul>
-			{% for company in company_dict %} {% if company.is_publisher == 1 %}
-			<li>{{ company.company }}</li>
-			{% endif %} {% endfor %}
-		</ul>
-		<h4>Developer</h4>
-		<ul>
-			{% for company in company_dict %} {% if company.is_developer == 1 %}
-			<li>{{ company.company }}</li>
-			{% endif %} {% endfor %}
-		</ul>
-	</section>
 
-	<section>
-		<h3>{{ core_game_dict.age_rating_org }} Age Ratings</h3>
-		<table>
-			<tr>
-				<th>Rating</th>
-				<th>Description</th>
-			</tr>
-			<tr>
-				<td>{{ core_game_dict.age_rating_cat }}</td>
-				<td>{{ core_game_dict.age_rating_desc }}</td>
-			</tr>
+
+	<section class="companies-and-websites">
+		<table class="small-table companies">
+			<thead>
+				<tr>
+					<th class="small-table-title" colspan="2">Companies Involved</th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr>
+					<th class="small-table-head col-1">Company Name</th>
+					<th class="small-table-head col-2">Type for Game</th>
+				</tr>
+				{% for company in company_dict %}
+				<tr>
+					<td class="small-table-data col-1">{{ company.company }}</td>
+					<td class="small-table-data col-2">{{ company.label }}</td>
+				</tr>
+				{% endfor %}
+			</tbody>
+		</table>
+		<table class="small-table websites">
+			<thead>
+				<tr>
+					<th class="small-table-title" colspan="2">Websites</th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr>
+					<th class="small-table-head col-1">Website Type</th>
+					<th class="small-table-head col-2">Website URL</th>
+				</tr>
+				{% for website in website_dict %}
+				<tr>
+					<td class="small-table-data col-1">{{ website.website_type }}</td>
+					<td class="small-table-data col-2"><a href="{{ website.website_url }}" target="_blank">{{ website.website_url }}</a></td>
+				</tr>
+				{% endfor %}
+			</tbody>
 		</table>
 	</section>
 
-	{% if multiplayer_dict %}
-	<section>
-		<h3>Multiplayer Options</h3>
-		<ul>
-			{% if multiplayer_dict.campaign_coop == 1 %}
-			<li>Campaign Coop</li>
-			{% endif %} {% if multiplayer_dict.dropin == 1 %}
-			<li>Player Dropin</li>
-			{% endif %} {% if multiplayer_dict.lancoop == 1 %}
-			<li>LAN Coop</li>
-			{% endif %} {% if multiplayer_dict.offlinecoop == 1 %}
-			<li>Offline Coop</li>
-			{% endif %} {% if multiplayer_dict.onlinecoop == 1 %}
-			<li>Online Coop</li>
-			{% endif %} {% if multiplayer_dict.splitscreen == 1 %}
-			<li>Local Splitscreen</li>
-			{% endif %} {% if multiplayer_dict.splitscreenonline == 1 %}
-			<li>Online Splitscreen</li>
-			{% endif %} {% if multiplayer_dict.offlinemax %}
-			<li>Maximum Local Players: {{ multiplayer_dict.offlinemax }}</li>
-			{% endif %} {% if multiplayer_dict.onlinemax %}
-			<li>Maximum Online Players: {{ multiplayer_dict.onlinemax }}</li>
-			{% endif %}
-		</ul>
-	</section>
-	{% endif %}
-</body>
+{% endblock %}
