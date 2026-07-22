@@ -24,8 +24,55 @@
 	</div>
 </div>
 
+<div class="arrangements">
+	<form method="GET" action="{{ url_for('index') }}">
+		<div class="filter-bar">
+			<div class="filter-grp">
+				<label for="sort-catalog">Sort Catalog:</label>
+				<select id="sort-catalog" name="sort" onchange="this.form.submit()">
+					<option value="title" {{ 'selected' if sort_by == 'title' else '' }}>Title</option>
+					<option value="date_added" {{ 'selected' if sort_by == 'date_added' else '' }}>Date Added</option>
+					<option value="hours_played" {{ 'selected' if sort_by == 'hours_played' else '' }}>Hours Played</option>
+				</select>
+			</div>
+			<div class="filter-grp">
+				<label for="catalog-status-filter">Catalog Status:</label>
+				<select id="catalog-status-filter" name="catalog" onchange="this.form.submit()">
+					<option value="" {{ 'selected' if cat_filter_value == 'all' else '' }}>All</option>
+					<option value="Backlog" {{ 'selected' if cat_filter_value == 'Backlog' else '' }}>Backlog</option>
+					<option value="In-Progress" {{ 'selected' if cat_filter_value == 'In-Progress' else '' }}>In-Progress</option>
+					<option value="Completed Main Story" {{ 'selected' if cat_filter_value == 'Completed Main Story' else '' }}>Completed Main Story</option>
+					<option value="Completed Everything" {{ 'selected' if cat_filter_value == 'Completed Everything' else '' }}>Completed Everything</option>
+					<option value="Abandoned" {{ 'selected' if cat_filter_value == 'Abandoned' else '' }}>Abandoned</option>
+					<option value="On Hold" {{ 'selected' if cat_filter_value == 'On Hold' else '' }}>On Hold</option>
+					<option value="New Game+" {{ 'selected' if cat_filter_value == 'New Game+' else '' }}>New Game+</option>
+					<option value="Wishlisted" {{ 'selected' if cat_filter_value == 'Wishlisted' else '' }}>Wishlisted</option>
+					<option value="Xbox Gamepass" {{ 'selected' if cat_filter_value == 'Xbox Gamepass' else '' }}>Xbox Gamepass</option>
+				</select>
+			</div>
+			<div class="filter-grp">
+				<label for="owned-filter">Owned:</label>
+				<select id="owned-filter" name="owned" onchange="this.form.submit()">
+					<option value="" {{ 'selected' if own_value == 'all' else '' }}>All</option>
+					<option value="owned" {{ 'selected' if own_value == 'owned' else '' }}>Owned</option>
+					<option value="not_owned" {{ 'selected' if own_value == 'not_owned' else '' }}>Not Owned</option>
+				</select>
+			</div>
+			<div class="filter-grp">
+				<label for="platform-owned">Platform:</label>
+				<select id="platform-owned" name="platform" multiple>
+					{% for filter in owned_platform_filters %}
+					<option value="{{ filter }}" {{ 'selected' if filter in platform_value else '' }}>{{ filter }}</option>
+					{% endfor %}
+				</select>
+			</div>
+			<button class="sub-btn" type="submit">Filter</button>
+		</div>
+	</form>
+</div>
+
 <div class="owned-games">
-	{% for item in catalog|sort(attribute="title") %}
+	{% for item in catalog %}
 	<div class="catalog-game">
 		<figure>
 			<a href="{{ url_for('game_details', game_table_id=item.game_table_id) }}">

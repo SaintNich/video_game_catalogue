@@ -451,7 +451,30 @@ def update_game_platforms(game_table_id: int, full_game_result: dict):
             platforms = None
 
         if platforms:
+            all_platforms = platforms.copy()
+            addl_platforms = [
+                {
+                    "abbr": None,
+                    "name": "Steam",
+                    "alt_name": None,
+                },
+                {
+                    "abbr": None,
+                    "name": "Epic Games",
+                    "alt_name": None,
+                },
+                {
+                    "abbr": "GOG",
+                    "name": "GOG",
+                    "alt_name": "Good Old Games"
+                }
+            ]
+            
             for platform in platforms:
+                if platform.get("name") == "PC (Microsoft Windows)":
+                    all_platforms.extend(addl_platforms)
+
+            for platform in all_platforms:
                 conn.execute(
                     """
                     INSERT OR IGNORE INTO game_platforms (

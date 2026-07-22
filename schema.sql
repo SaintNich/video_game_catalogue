@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS games (
 CREATE TABLE IF NOT EXISTS user_game_relationship (
   relationship_id INTEGER PRIMARY KEY,
   game_table_id INT NOT NULL,
-  catalog_status TEXT NOT NULL DEFAULT 'backlog',
+  catalog_status TEXT NOT NULL DEFAULT 'Backlog',
   date_added TEXT NOT NULL,
   date_main_completed TEXT,
   date_completed TEXT,

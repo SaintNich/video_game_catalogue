@@ -16,14 +16,34 @@
 			<div class="cont-support">
 				<p>Does this game have controller support?</p>
 				<div class="radio-options">
+					{% if core_game_values.controller_supported == 1 %}
+					<div class="radio-grp">
+						<label for="controller_support">Controller Support</label>
+						<input type="radio" id="controller_support" name="controller_support" value="1" checked/>
+					</div>
+					<div class="radio-grp">
+						<label for="controller_support">No Controller Support</label>
+						<input type="radio" id="controller_support" name="controller_support" value="0" />
+					</div>
+					{% elif core_game_values.controller_supported == 0 %}
 					<div class="radio-grp">
 						<label for="controller_support">Controller Support</label>
 						<input type="radio" id="controller_support" name="controller_support" value="1" />
 					</div>
 					<div class="radio-grp">
-						<label for="no_controller_support">No Controller Support</label>
+						<label for="controller_support">No Controller Support</label>
+						<input type="radio" id="controller_support" name="controller_support" value="0" checked/>
+					</div>
+					{% else %}
+					<div class="radio-grp">
+						<label for="controller_support">Controller Support</label>
+						<input type="radio" id="controller_support" name="controller_support" value="1" />
+					</div>
+					<div class="radio-grp">
+						<label for="controller_support">No Controller Support</label>
 						<input type="radio" id="controller_support" name="controller_support" value="0" />
 					</div>
+					{% endif %}
 				</div>
 			</div>
 			<div class="owned-form">
@@ -32,11 +52,7 @@
 					{% for value in ownership_values %}
 					<div class="chkbx-grp">
 						<label for="owned_platform">{{ value.platform }}</label>
-						{% if value.owned %}
-						<input type="checkbox" id="owned_platform" name="owned_platform" value="{{ value.platform }}" checked />
-						{% else %}
-						<input type="checkbox" id="owned_platform" name="owned_platform" value="{{ value.platform }}" />
-						{% endif %}
+						<input type="checkbox" id="owned_platform" name="owned_platform" value="{{ value.platform }}" {{ 'checked' if value.owned else '' }} />
 					</div>
 					{% endfor %}
 				</div>
@@ -118,7 +134,7 @@
 					name="user_notes"
 					id="user_notes"
 					placeholder="Enter some notes about the game"
-					value="{{ cur_relationship_values.user_notes }} if {{ cur_relationship_values.user_notes }} else ''"></textarea>
+					value="{{ cur_relationship_values.user_notes if cur_relationship_values.user_notes else None }}">{{ cur_relationship_values.user_notes if cur_relationship_values.user_notes }}</textarea>
 			</div>
 		</div>
 

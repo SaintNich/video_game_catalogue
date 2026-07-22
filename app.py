@@ -30,6 +30,7 @@ from steam import (
     get_steam_info,
     write_additional_steam_game_information,
 )
+from user_relationship import create_user_game_relationship
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -45,18 +46,89 @@ app = Flask(__name__)
 app.secret_key = os.getenv("secret_key")
 
 
-@app.route("/")
+@app.route("/", methods=["GET"])
 def index():
     conn = get_conn()
 
     try:
-        catalog_data = conn.execute("""
-            SELECT
-                game_table_id,
-                title,
-                cover_img
-            FROM games                           
+        allowed_sort = ["title", "date_added", "hours_played"]
+        
+        catalog_filters = [
+            "Backlog",
+            "In-Progress",
+            "Completed Main Story",
+            "Completed Everything",
+            "Abandoned",
+            "On Hold",
+            "New Game+",
+            "Wishlisted",
+            "Xbox Gamepass",
+        ]
+        
+        own_filters = ["owned", "not_owned"]
+        
+        packed_owned_platform_filters = conn.execute("""
+            SELECT platform
+            FROM game_platforms
+            GROUP BY platform
         """).fetchall()
+        
+        owned_platform_filters = [platform[0] for platform in packed_owned_platform_filters]
+        
+        sort_value = request.args.get("sort")
+        cat_filter_value = request.args.get("catalog")
+        own_value = request.args.get("owned")
+        platform_value = request.args.getlist("platform")
+        
+        params = []
+        conditions = []
+
+        if sort_value in allowed_sort:
+            sort_by = sort_value
+        else:
+            sort_by = "title"
+
+        if cat_filter_value in catalog_filters:
+            conditions.append("u.catalog_status = ?")
+            params.append(cat_filter_value)
+
+        if own_value in own_filters:
+            owned_str = "IS NOT NULL" if own_value == "owned" else "IS NULL"
+            conditions.append(f"upo.platform_id {owned_str}")
+
+        if platform_value:
+            placeholders = ["?"] * len(platform_value)
+            req_placeholders = ", ".join(placeholders)
+            conditions.append(f"p.platform IN ({req_placeholders})")
+            params.extend(platform_value)
+
+        if conditions:
+            where_clause = "WHERE " + " AND ".join(conditions)
+        else:
+            where_clause = ""
+            
+        catalog_data = conn.execute(
+            f"""
+            SELECT
+                g.game_table_id,
+                g.title,
+                g.cover_img,
+                u.date_added,
+                u.hours_played,
+                u.catalog_status,
+                upo.platform_id,
+                p.platform
+            FROM games g
+            JOIN user_game_relationship u
+            ON g.game_table_id = u.game_table_id
+            LEFT JOIN user_platform_own upo
+            ON u.relationship_id = upo.relationship_id
+            JOIN game_platforms p
+            ON upo.platform_id = p.platform_id
+            {where_clause}
+            ORDER BY {sort_by} NULLS LAST                
+        """, params
+        ).fetchall()
 
     except sqlite3.Error as e:
         log.error(f"An error occured with the database: {type(e).__name__}: {e}")
@@ -71,11 +143,23 @@ def index():
                 "cover": "//images.igdb.com/igdb/image/upload/t_cover_big/"
                 + cover_id
                 + ".webp",
+                "date_added": date_added,
+                "hours_played": hours_played,
+                "catalog_status": catalog_status,
+                "platform_id": platform_id,
+                "platform": platform,
             }
-            for game_table_id, title, cover_id in catalog_data
+            for game_table_id, title, cover_id, date_added, hours_played, catalog_status, platform_id, platform in catalog_data
         ]
-        log.debug(f"image url = {catalog}")
-        return render_template("index.html", catalog=catalog)
+        return render_template(
+            "index.html", 
+            catalog=catalog, 
+            sort_by=sort_by, 
+            cat_filter_value=cat_filter_value, 
+            own_value=own_value, 
+            owned_platform_filters=owned_platform_filters,
+            platform_value=platform_value
+        )
 
     finally:
         conn.close()
@@ -95,16 +179,17 @@ def game_search():
 
         for search_result in search_results_raw:
             try:
-                search_results.append(
-                    {
-                        "game_title": search_result.get("name"),
-                        "release_year": dt.datetime.fromtimestamp(
-                            search_result.get("first_release_date")
-                        ).year
-                        if search_result.get("first_release_date")
-                        else "unknown",
-                        "igdb_id": search_result.get("id"),
-                    }
+                name = search_result.get("name")
+                release_year = (
+                    dt.datetime.fromtimestamp(
+                        search_result.get("first_release_date")
+                    ).year
+                    if search_result.get("first_release_date")
+                    else "unknown"
+                )
+                igdb_id = search_result.get("id")
+                log.debug(
+                    f"Game Name: {name} | Release Year: {release_year} | IGDB ID#: {igdb_id}"
                 )
 
             except (ValueError, OSError, OverflowError) as e:
@@ -112,7 +197,14 @@ def game_search():
                 continue
 
             else:
-                return render_template("results.html", search_results=search_results)
+                search_results.append(
+                    {
+                        "game_title": name,
+                        "release_year": release_year,
+                        "igdb_id": igdb_id,
+                    }
+                )
+        return render_template("results.html", search_results=search_results)
     else:
         return render_template("game_search.html")
 
@@ -124,8 +216,16 @@ def game_selection():
             game_selection = tuple(request.form.get("game_selection").split(","))
             igdb_id, game_title = game_selection
             igdb_id = int(igdb_id)
-            steam_game_id = int(request.form.get("steam_game_id"))
-            steam_game_playtime = float(request.form.get("steam_game_playtime"))
+            steam_game_id = (
+                int(request.form.get("steam_game_id"))
+                if request.form.get("steam_game_id")
+                else None
+            )
+            steam_game_playtime = (
+                float(request.form.get("steam_game_playtime"))
+                if request.form.get("steam_game_playtime")
+                else None
+            )
             log.info(
                 f"IGDB ID#: {igdb_id} | Game Title: {game_title} | Steam Game ID#: {steam_game_id} | Steam Playtime: {steam_game_playtime}"
             )
@@ -201,6 +301,8 @@ def processing():
                 hltb_completionist=hltb_completionist,
                 hltb_all_styles=hltb_all_styles,
             )
+
+            create_user_game_relationship(game_table_id=game_table_id)
 
         except ValueError as e:
             log.error(f"Improper value submitted: {type(e).__name__}: {e}")
@@ -372,12 +474,14 @@ def gamepass_update():
         return redirect(url_for("index"))
 
 
-def build_comp_roles_label(is_developer:int, is_porting:int, is_publisher:int, is_supporting:int) -> str:
+def build_comp_roles_label(
+    is_developer: int, is_porting: int, is_publisher: int, is_supporting: int
+) -> str:
     starter_list = [
         "Developer" if is_developer else None,
         "Porting" if is_porting else None,
         "Publisher" if is_publisher else None,
-        "Supporting" if is_supporting else None
+        "Supporting" if is_supporting else None,
     ]
     labeled_list = [item for item in starter_list if item]
 
@@ -401,11 +505,7 @@ def game_details(game_table_id):
                 summary,
                 story,
                 release_date,      
-                CASE
-                    WHEN controller_supported = 1 THEN 'Controller Supported'
-                    WHEN controller_supported = 0 THEN 'Controller Not Supported'
-                    ELSE NULL
-                END AS controller_supported,
+                controller_supported,
                 game_status,
                 game_type,
                 game_modes,
@@ -592,7 +692,9 @@ def game_details(game_table_id):
             "version_title": core_game_info[2],
             "version_parent": core_game_info[3],
             "cover_img": core_game_info[4],
-            "images": core_game_info[5].split(", "),
+            "images": core_game_info[5].split(", ")
+            if type(core_game_info[5]) is list
+            else core_game_info[5],
             "summary": core_game_info[6],
             "story": core_game_info[7],
             "release_date": core_game_info[8],
@@ -605,7 +707,7 @@ def game_details(game_table_id):
             "age_rating_org": core_game_info[15],
             "age_rating_cat": core_game_info[16],
             "age_rating_synopsis": core_game_info[17],
-            "age_rating_desc": core_game_info[18]
+            "age_rating_desc": core_game_info[18],
         }
     else:
         core_game_dict = {}
@@ -654,11 +756,11 @@ def game_details(game_table_id):
                 "is_publisher": row[3],
                 "is_supporting": row[4],
                 "label": build_comp_roles_label(
-                    is_developer=row[1], 
+                    is_developer=row[1],
                     is_porting=row[2],
                     is_publisher=row[3],
-                    is_supporting=row[4]
-                )
+                    is_supporting=row[4],
+                ),
             }
             for row in company_info
         ]
@@ -667,11 +769,7 @@ def game_details(game_table_id):
 
     if platform_info:
         platform_dict = [
-            {
-                "platform": row[0],
-                "platform_abbr": row[1]
-            } 
-            for row in platform_info
+            {"platform": row[0], "platform_abbr": row[1]} for row in platform_info
         ]
     else:
         platform_dict = []
@@ -701,7 +799,7 @@ def game_details(game_table_id):
                 "expansions": row[4],
                 "expanded_games": row[5],
                 "standalone_expansions": row[6],
-                "series_forks": row[7]
+                "series_forks": row[7],
             }
             for row in adl_content_info
         ]
@@ -754,6 +852,21 @@ def game_details_form():
             game_table_id = int(request.form.get("game_table_id"))
             game_title = request.form.get("game_title")
             platform_dict = ast.literal_eval(request.form.get("platform_dict"))
+
+            fetch_core_game_values = conn.execute(
+                """
+                SELECT
+                    controller_supported
+                FROM games
+                WHERE game_table_id = ?
+            """,
+                (game_table_id,),
+            ).fetchone()
+
+            if fetch_core_game_values:
+                core_game_values = {"controller_supported": fetch_core_game_values[0]}
+            else:
+                core_game_values = {}
 
             fetch_cur_relationship_values = conn.execute(
                 """
@@ -855,6 +968,7 @@ def game_details_form():
                 game_table_id=game_table_id,
                 game_title=game_title,
                 platform_dict=platform_dict,
+                core_game_values=core_game_values,
                 cur_relationship_values=cur_relationship_values,
                 ownership_values=ownership_values,
                 played_on_values=played_on_values,
@@ -934,10 +1048,26 @@ def update_game_details():
             ).fetchone()
 
             if user_game_rel_id:
+                conn.execute(
+                    """
+                    DELETE FROM user_platform_own
+                    WHERE relationship_id = ?
+                """,
+                    (user_game_rel_id[0],),
+                )
+
+                conn.execute(
+                    """
+                    DELETE FROM user_played_on
+                    WHERE relationship_id = ?
+                """,
+                    (user_game_rel_id[0],),
+                )
+                
                 for platform in owned_platforms:
                     conn.execute(
                         """
-                        INSERT OR IGNORE INTO user_platform_own (relationship_id, platform_id)
+                        INSERT OR REPLACE INTO user_platform_own (relationship_id, platform_id)
                         VALUES (?, (
                             SELECT platform_id
                             FROM game_platforms
@@ -947,12 +1077,11 @@ def update_game_details():
                     """,
                         (user_game_rel_id[0], platform, game_table_id),
                     )
-                conn.commit()
 
                 for platform in played_platforms:
                     conn.execute(
                         """
-                        INSERT OR IGNORE INTO user_played_on (relationship_id, platform_id, game_hours)
+                        INSERT OR REPLACE INTO user_played_on (relationship_id, platform_id, game_hours)
                         VALUES (?, (
                             SELECT platform_id
                             FROM game_platforms
@@ -993,3 +1122,72 @@ def update_game_details():
             conn.close()
     else:
         return redirect(url_for("index"))
+
+
+@app.route("/delete_game", methods=["GET", "POST"])
+def delete_game():
+    conn = get_conn()
+
+    try:
+        game_table_id = request.form.get("game_table_id")
+
+        fetch_rel_id = conn.execute(
+            """
+            SELECT relationship_id
+            FROM user_game_relationship
+            WHERE game_table_id = ?
+        """,
+            (game_table_id,),
+        ).fetchone()
+
+        rel_tables = ["user_played_on", "user_platform_own"]
+        game_id_tables = [
+            "hltb_data",
+            "additional_game_content",
+            "game_series",
+            "game_websites",
+            "game_platforms",
+            "game_involved_companies",
+            "external_sources",
+            "multiplayer_modes",
+            "user_game_relationship",
+            "games",
+        ]
+
+        if fetch_rel_id:
+            rel_id = fetch_rel_id[0]
+
+            for table in rel_tables:
+                conn.execute(
+                    f"""
+                    DELETE FROM {table}
+                    WHERE relationship_id = ?
+                """,
+                    (rel_id,),
+                )
+
+        else:
+            log.warning("No relationship ID exists")
+
+        for table in game_id_tables:
+            conn.execute(
+                f"""
+                DELETE FROM {table}
+                WHERE game_table_id = ?
+            """,
+                (game_table_id,),
+            )
+
+    except sqlite3.Error as e:
+        log.error(f"There was an error removing the game. {type(e).__name__}: {e}")
+        flash("An error occurred when deleting the game", "error")
+        conn.rollback()
+        return redirect(url_for("index"))
+
+    else:
+        flash("Game deleted successfully", "info")
+        conn.commit()
+        return redirect(url_for("index"))
+
+    finally:
+        conn.close()

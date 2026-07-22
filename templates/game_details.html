@@ -118,6 +118,18 @@
 				<p>None</p>
 			</div>
 			{% endif %}
+			<div class="pairing">
+				<h3 class="sub-hdg">Personal Rating:</h3>
+				{% if relationship_dict.rating %} 
+				<p>{{ relationship_dict.rating }}</p>
+				{% else %}
+				<p>Not yet rated</p>
+				{% endif %}
+			</div>
+			<div class="pairing">
+				<h3 class="sub-hdg">Notes:</h3>
+				<p>{{ relationship_dict.user_notes }}</p>
+			</div>
 
 			<table class="small-table">
 				<thead>
@@ -152,9 +164,11 @@
 			</div>
 
 			<div class="art-gallery">
+				{% if core_game_dict.images %}
 				{% for image in core_game_dict.images %}
 				<img src="//images.igdb.com/igdb/image/upload/t_cover_big/{{ image }}.webp">
 				{% endfor %}
+				{% endif %}
 			</div>
 		</div>
 	</section>
@@ -366,5 +380,10 @@
 			</tbody>
 		</table>
 	</section>
+
+	<form class="update-btn" method="POST" action="{{ url_for('delete_game') }}">
+		<input type="hidden" name="game_table_id" value="{{ game_table_id }}" />
+		<button class="del-btn" type="submit">Delete Game</button>
+	</form>
 
 {% endblock %}

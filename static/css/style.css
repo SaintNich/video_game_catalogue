@@ -64,13 +64,48 @@ html {
 	margin: 4px;
 }
 
+.arrangements {
+    width: 100%;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-evenly;
+}
+
+.arrangements > form {
+    width: 100%;
+}
+
+.filter-bar {
+    width: 100%;
+    display: flex;
+    gap: 2rem;
+}
+
+.filter-bar > button {
+    align-self: center;
+    margin: 0 auto;
+}
+
+.filter-grp {
+    width: 20%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+}
+
+.filter-grp > label {
+    width: 35%;
+}
+
 .form-txt-box,
 .srch-selection,
 .cat-stat-select > select,
 .form-date-select > input[type=date],
 .form-hrs-input > input[type=number],
 .form-rating > input[type=number],
-.form-notes > textarea {
+.form-notes > textarea,
+.filter-grp > select {
 	background-color: #353839;
 	color: #f5f5f5;
 	width: 66%;
@@ -79,8 +114,13 @@ html {
 	border-radius: 1rem;
 }
 
+#platform-owned {
+    height: 100%;
+}
+
 .sub-btn {
 	width: 8rem;
+    min-width: 8rem;
 	border-radius: 4rem;
 	padding: 4px;
 	background-color: #f5f5f5;
@@ -162,6 +202,7 @@ html {
 .srch-result {
     display: flex;
     width: 90%;
+    margin: 4px;
 }
 
 .srch-result > form {
@@ -169,6 +210,7 @@ html {
     width: 100%;
     align-items: center;
     justify-content: space-between;
+    gap: 1rem;
 }
 
 .srch-label {
@@ -444,6 +486,15 @@ html {
 .small-table.companies > tbody > tr > .small-table-data {
     padding-left: 1rem;
     padding-right: 1rem;
+}
+
+.del-btn {
+	width: 8rem;
+    min-width: 8rem;
+	border-radius: 4rem;
+	padding: 4px;
+	background-color: #990000;
+	color: #f5f5f5;
 }
 
 .update-game-form {
