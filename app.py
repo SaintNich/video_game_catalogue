@@ -123,9 +123,10 @@ def index():
             ON g.game_table_id = u.game_table_id
             LEFT JOIN user_platform_own upo
             ON u.relationship_id = upo.relationship_id
-            JOIN game_platforms p
+            LEFT JOIN game_platforms p
             ON upo.platform_id = p.platform_id
             {where_clause}
+            GROUP BY g.title
             ORDER BY {sort_by} NULLS LAST                
         """, params
         ).fetchall()
@@ -142,7 +143,7 @@ def index():
                 "title": title,
                 "cover": "//images.igdb.com/igdb/image/upload/t_cover_big/"
                 + cover_id
-                + ".webp",
+                + ".webp" if cover_id else None,
                 "date_added": date_added,
                 "hours_played": hours_played,
                 "catalog_status": catalog_status,
@@ -270,6 +271,7 @@ def game_selection():
                 else:
                     log.info("No results found for HLTB search, table not updated.")
                     flash("HLTB search found no results.", "info")
+                    create_user_game_relationship(game_table_id=processed_game)
                     return redirect(url_for("index"))
             else:
                 log.warning(f"Data not returned from game_processing({igdb_id})")
@@ -284,6 +286,8 @@ def processing():
     if request.method == "POST":
         try:
             hltb_selection = tuple(request.form.get("hltb_selection").split(", "))
+            game_table_id = int(request.form.get("game_table_id"))
+
             (
                 hltb_id,
                 hltb_main_story,
@@ -291,7 +295,6 @@ def processing():
                 hltb_completionist,
                 hltb_all_styles,
             ) = hltb_selection
-            game_table_id = int(request.form.get("game_table_id"))
 
             chk_hltb_info = add_hltb_info(
                 hltb_id=hltb_id,
