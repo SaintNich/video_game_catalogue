@@ -66,9 +66,11 @@ html {
 
 .arrangements {
     width: 100%;
-    margin: 0 auto;
+    margin: 0 auto 2rem;
     display: flex;
+    flex-direction: column;
     justify-content: space-evenly;
+    gap: 2rem;
 }
 
 .arrangements > form {
@@ -116,6 +118,11 @@ html {
 
 #platform-owned {
     height: 100%;
+}
+
+.cat-search {
+    width: 40%;
+    margin: 0 auto;
 }
 
 .sub-btn {

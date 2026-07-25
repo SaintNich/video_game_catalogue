@@ -69,6 +69,12 @@
 			<button class="sub-btn" type="submit">Filter</button>
 		</div>
 	</form>
+	<div class="cat-search">
+		<form method="GET" action="{{ url_for('index') }}">
+			<input class="form-txt-box" type="text" name="catalog_search" placeholder="Search the catalogue." />
+			<button class="sub-btn" type="submit">Search</button>
+		</form>
+	</div>
 </div>
 
 <div class="owned-games">

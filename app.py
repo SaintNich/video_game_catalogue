@@ -79,6 +79,7 @@ def index():
         cat_filter_value = request.args.get("catalog")
         own_value = request.args.get("owned")
         platform_value = request.args.getlist("platform")
+        search_value = request.args.get("catalog_search")
         
         params = []
         conditions = []
@@ -101,6 +102,10 @@ def index():
             req_placeholders = ", ".join(placeholders)
             conditions.append(f"p.platform IN ({req_placeholders})")
             params.extend(platform_value)
+
+        if search_value:
+            conditions.append("g.title LIKE ?")
+            params.append("%" + search_value + "%")
 
         if conditions:
             where_clause = "WHERE " + " AND ".join(conditions)
