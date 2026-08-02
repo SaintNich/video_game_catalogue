@@ -4,16 +4,14 @@
 
 {% block content %}
 	
-	<div class="close-btn">
-		<a href="{{ url_for('index') }}">X</a>
-	</div>
+	<a id="close-btn" class="close-btn" href="{{ url_for('index') }}">X</a>
 
 	<h1 class="main-heading">{{ core_game_dict.game_title }}</h1>
 	<form class="update-btn" method="POST" action="{{ url_for('game_details_form') }}">
 		<input type="hidden" name="game_table_id" value="{{ game_table_id }}" />
 		<input type="hidden" name="game_title" value="{{ core_game_dict.game_title }}">
 		<input type="hidden" name="platform_dict" value="{{ platform_dict }}" />
-		<button class="sub-btn" type="submit">Update Game</button>
+		<button class="sub-btn" type="submit" onclick="document.body.style.cursor='wait'; return true;">Update Game</button>
 	</form>
 
 	<section class="game-section">
@@ -338,8 +336,6 @@
 		</div>
 	</section>
 
-
-
 	<section class="companies-and-websites">
 		<table class="small-table companies">
 			<thead>
@@ -383,7 +379,19 @@
 
 	<form class="update-btn" method="POST" action="{{ url_for('delete_game') }}">
 		<input type="hidden" name="game_table_id" value="{{ game_table_id }}" />
-		<button class="del-btn" type="submit">Delete Game</button>
+		<button class="del-btn" type="submit" onclick="document.body.style.cursor='wait'; return true;">Delete Game</button>
 	</form>
+
+{% endblock %}
+
+{% block added_script %}
+
+	<script type="text/javascript">
+		document.addEventListener("keyup", (event) => {
+			if (event.key === "Escape") {
+				document.getElementById("close-btn").click()
+			}
+		})
+	</script>
 
 {% endblock %}

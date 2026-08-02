@@ -9,7 +9,7 @@
 <div class="search">
   <form method="POST" , action="{{ url_for('game_search') }}">
     <input class="form-txt-box" type="text" name="game_search" placeholder="What are you searching for?" />
-    <button class="sub-btn" type="submit">Search</button>
+    <button class="sub-btn" type="submit" onclick="document.body.style.cursor='wait'; return true;">Search</button>
   </form>
 </div>
 

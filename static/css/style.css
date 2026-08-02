@@ -1,6 +1,7 @@
 html {
 	background-color: #343434;
 	color: #f5f5f5;
+    cursor: progress;
 }
 
 .flashes {
@@ -65,47 +66,47 @@ html {
 }
 
 .arrangements {
-    width: 100%;
-    margin: 0 auto 2rem;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-evenly;
-    gap: 2rem;
+	width: 100%;
+	margin: 0 auto 2rem;
+	display: flex;
+	flex-direction: column;
+	justify-content: space-evenly;
+	gap: 2rem;
 }
 
 .arrangements > form {
-    width: 100%;
+	width: 100%;
 }
 
 .filter-bar {
-    width: 100%;
-    display: flex;
-    gap: 2rem;
+	width: 100%;
+	display: flex;
+	gap: 2rem;
 }
 
 .filter-bar > button {
-    align-self: center;
-    margin: 0 auto;
+	align-self: center;
+	margin: 0 auto;
 }
 
 .filter-grp {
-    width: 20%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 1rem;
+	width: 20%;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	gap: 1rem;
 }
 
 .filter-grp > label {
-    width: 35%;
+	width: 35%;
 }
 
 .form-txt-box,
 .srch-selection,
 .cat-stat-select > select,
-.form-date-select > input[type=date],
-.form-hrs-input > input[type=number],
-.form-rating > input[type=number],
+.form-date-select > input[type="date"],
+.form-hrs-input > input[type="number"],
+.form-rating > input[type="number"],
 .form-notes > textarea,
 .filter-grp > select {
 	background-color: #353839;
@@ -117,17 +118,17 @@ html {
 }
 
 #platform-owned {
-    height: 100%;
+	height: 100%;
 }
 
 .cat-search {
-    width: 40%;
-    margin: 0 auto;
+	width: 40%;
+	margin: 0 auto;
 }
 
 .sub-btn {
 	width: 8rem;
-    min-width: 8rem;
+	min-width: 8rem;
 	border-radius: 4rem;
 	padding: 4px;
 	background-color: #f5f5f5;
@@ -140,364 +141,374 @@ html {
 	display: grid;
 	grid-template-columns: repeat(6, 1fr);
 	grid-gap: 1rem;
-    align-items: start;
-    justify-items: center;
+	align-items: start;
+	justify-items: center;
 }
 
 .catalog-game {
-    display: flex;
-    align-items: start;
-    justify-content: center;
+	display: flex;
+	align-items: start;
+	justify-content: center;
 	width: 200px;
 }
 
 .catalog-game > figure {
-    margin: 10px;
+	margin: 10px;
 }
 
 .catalog-game > figure > figcaption {
-    text-align: center;
-    margin-top: 10px;
-    padding: 4px;
-    background-color: #f5f5f5;
-    border-radius: 1rem;
-    height: 34px;
-    max-height: 34px;
+	text-align: center;
+	margin-top: 10px;
+	padding: 4px;
+	background-color: #f5f5f5;
+	border-radius: 1rem;
+	height: 34px;
+	max-height: 34px;
 }
 
 .catalog-game > figure > figcaption > a {
-    color: #343434;
-    text-decoration: none;
+	color: #343434;
+	text-decoration: none;
 }
 
 .cover-art {
-    height: 100%;
-    width: 100%;
-    object-fit: contain;
-    border-radius: 1rem;
+	height: 100%;
+	width: 100%;
+	object-fit: contain;
+	border-radius: 1rem;
 }
 
 .close-btn {
-    height: 20px;
-    width: 20px;
-    background-color: #f5f5f5;
-    border: 2px outset #f5f5f5;
-    border-radius: 0.5rem;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    position: absolute;
-    top: 20px;
-    right: 20px;
+	height: 20px;
+	width: 20px;
+	background-color: #f5f5f5;
+	border: 2px outset #f5f5f5;
+	border-radius: 0.5rem;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	position: absolute;
+	top: 20px;
+	right: 20px;
+	text-decoration: none;
+	font-family: monospace;
+	font-size: 18px;
+	margin: 0;
 }
 
-.close-btn > a {
-    text-decoration: none;
-    font-family: monospace;
-    font-size: 18px;
+.sub-btn:hover,
+.close-btn:hover {
+    cursor: pointer;
+    background-color: #f9f9f9;
+    border-color: #f9f9f9;
+}
+
+.sub-btn:active,
+.close-btn:active {
+    border-style: inset;
 }
 
 .search-results {
-    width: 80%;
-    margin: 2rem auto;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    column-gap: 1rem;
-    justify-items: center;
+	width: 80%;
+	margin: 2rem auto;
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	column-gap: 1rem;
+	justify-items: center;
 }
 
 .srch-result {
-    display: flex;
-    width: 90%;
-    margin: 4px;
+	display: flex;
+	width: 90%;
+	margin: 4px;
 }
 
 .srch-result > form {
-    display: flex;
-    width: 100%;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
+	display: flex;
+	width: 100%;
+	align-items: center;
+	justify-content: space-between;
+	gap: 1rem;
 }
 
 .srch-label {
-    display: flex;
-    align-items: center;
-    height: 27px;
+	display: flex;
+	align-items: center;
+	height: 27px;
 }
 
 .srch-label.hltb {
-    justify-content: center;
-    margin: 4px;
+	justify-content: center;
+	margin: 4px;
 }
 
 .selection-set {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 1rem;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 1rem;
 }
 
 .search {
-    width: 80%;
-    margin: 2rem auto;
+	width: 80%;
+	margin: 2rem auto;
 }
 
 .search > form {
-    width: 80%;
-    margin: 0 auto;
+	width: 80%;
+	margin: 0 auto;
 }
 
 .update-btn {
-    justify-self: center;
+	justify-self: center;
 }
 
 .game-section {
-    width: 90%;
-    display: flex;
-    justify-content: space-evenly;
-    margin: 0 auto 2rem;
+	width: 90%;
+	display: flex;
+	justify-content: space-evenly;
+	margin: 0 auto 2rem;
 }
 
 .game-details {
-    width: 45%;
-    margin-bottom: 2rem;
+	width: 45%;
+	margin-bottom: 2rem;
 }
 
 .section-hdg {
-    margin-bottom: 8px;
+	margin-bottom: 8px;
 }
 
 .pairing {
-    display: flex;
-    width: 100%;
-    gap: 1rem;
-    margin: 8px 0;
+	display: flex;
+	width: 100%;
+	gap: 1rem;
+	margin: 8px 0;
 }
 
 .pairing > p {
-    width: 70%;
-    margin: 0;
+	width: 70%;
+	margin: 0;
 }
 
 .sub-hdg {
-    font-size: 1rem;
-    width: 33%;
-    margin: 0;
+	font-size: 1rem;
+	width: 33%;
+	margin: 0;
 }
 
 .sub-hdg.centered {
-    margin: 0 auto;
+	margin: 0 auto;
 }
 
 .multiplayer > p {
-    padding-left: 1.5rem;
-    margin-top: 4px;
-    margin-bottom: 4px;
+	padding-left: 1.5rem;
+	margin-top: 4px;
+	margin-bottom: 4px;
 }
 
 .multi-types {
-    margin-top: 4px;
-    margin-bottom: 4px;
-    list-style-type: none;
+	margin-top: 4px;
+	margin-bottom: 4px;
+	list-style-type: none;
 }
 
 .small-table {
-    margin-top: 2rem;
-    text-align: left;
-    border-spacing: 0;
+	margin-top: 2rem;
+	text-align: left;
+	border-spacing: 0;
 }
 
 .small-table-title {
-    width: 100%;
-    background-color: #f5f5f5;
-    border: 2px solid #f5f5f5;
-    border-radius: 1rem 1rem 0 0;
-    color: #343434;
-    text-align: center;
+	width: 100%;
+	background-color: #f5f5f5;
+	border: 2px solid #f5f5f5;
+	border-radius: 1rem 1rem 0 0;
+	color: #343434;
+	text-align: center;
 }
 
 .small-table-head {
-    padding-top: 0.5rem;
-    padding-bottom: 0.5rem;
+	padding-top: 0.5rem;
+	padding-bottom: 0.5rem;
 }
 
 .small-table-data {
-    vertical-align: text-top;
+	vertical-align: text-top;
 }
 
 .small-table-head.col-1,
 .small-table-data.col-1 {
-    width: 30%;
-    padding-left: 1rem;
-    padding-right: 1rem;
+	width: 30%;
+	padding-left: 1rem;
+	padding-right: 1rem;
 }
 
 .small-table-data.col-1,
 .small-table-data.col-2 {
-    padding-left: 2.5rem;
-    padding-right: 2.5rem;
+	padding-left: 2.5rem;
+	padding-right: 2.5rem;
 }
 
 .game-images {
-    width: 45%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+	width: 45%;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
 }
 
 .disp-image {
-    margin: 1rem 0;
+	margin: 1rem 0;
 }
 
 .art-gallery {
-    margin: 1rem;
-    display: flex;
-    padding: 1rem;
-    height: 90px;
-    max-width: 100%;
-    gap: 1rem;
+	margin: 1rem;
+	display: flex;
+	padding: 1rem;
+	height: 90px;
+	max-width: 100%;
+	gap: 1rem;
 }
 
 .game-story {
-    width: 80%;
-    margin: 0 auto 2rem;
+	width: 80%;
+	margin: 0 auto 2rem;
 }
 
 .game-story > h2 {
-    background-color: #f5f5f5;
-    color: #343434;
-    border-radius: 1rem 1rem 0 0;
-    text-align: center;
-    margin-top: 0;
-    padding: 8px;
+	background-color: #f5f5f5;
+	color: #343434;
+	border-radius: 1rem 1rem 0 0;
+	text-align: center;
+	margin-top: 0;
+	padding: 8px;
 }
 
 .game-story > p {
-    margin: 1rem 2rem 1rem;
+	margin: 1rem 2rem 1rem;
 }
 
 .story-summary {
-    white-space: pre-line;
+	white-space: pre-line;
 }
 
 .relationship-section {
-    width: 90%;
-    margin: 0 auto 2rem;
+	width: 90%;
+	margin: 0 auto 2rem;
 }
 
 .relationship-section > h2 {
-    text-align: center;
+	text-align: center;
 }
 
 .timing-details {
-    display: flex;
-    gap: 1rem;
+	display: flex;
+	gap: 1rem;
 }
 
 .relationship-details,
 .hltb-details {
-    width: 45%;
-    margin: 0 auto;
+	width: 45%;
+	margin: 0 auto;
 }
 
 .relationship-details > h3,
 .hltb-details > h3 {
-    width: 100%;
-    text-align: center;
+	width: 100%;
+	text-align: center;
 }
 
 .relationship-details > .pairing > p,
 .hltb-details > .pairing > p {
-    text-align: end;
+	text-align: end;
 }
 
 .relationship-details > .pairing > .sub-hdg,
 .hltb-details > .pairing > .sub-hdg {
-    width: 80%;
+	width: 80%;
 }
 
 .series-and-expansions {
-    width: 90%;
-    margin: 0 auto 2rem;
+	width: 90%;
+	margin: 0 auto 2rem;
 }
 
 .small-table.series {
-    width: 45%;
+	width: 45%;
 }
 
 .small-table.series > tbody > tr > .small-table-head,
 .small-table.series > tbody > tr > .small-table-data {
-    width: 50%;
-    text-align: center;
+	width: 50%;
+	text-align: center;
 }
 
 .platform-related {
-    width: 60%;
-    margin: 0 auto 2rem;
+	width: 60%;
+	margin: 0 auto 2rem;
 }
 
 .platform-related .section-hdg {
-    text-align: center;
+	text-align: center;
 }
 
 .all-platforms {
-    display: flex;
+	display: flex;
 }
 
 .all-platforms > div > h3 {
-    margin: 0 auto;
+	margin: 0 auto;
 }
 
 .available-platforms,
 .platforms-owned-on,
 .platforms-played-on {
-    width: 33%;
+	width: 33%;
 }
 
 .available-platforms > ul,
 .platforms-owned-on > ul,
 .platforms-played-on > ul {
-    margin-top: 8px;
-    list-style-type: none;
+	margin-top: 8px;
+	list-style-type: none;
 }
 
 .companies-and-websites {
-    width: 80%;
-    margin: 0 auto 2rem;
-    display: flex;
-    justify-content: space-evenly;
+	width: 80%;
+	margin: 0 auto 2rem;
+	display: flex;
+	justify-content: space-evenly;
 }
 
 .companies,
 .websites {
-    width: 45%;
+	width: 45%;
 }
 
 .websites > tbody > tr > .small-table-data.col-2 > a {
-    color: #f5f5f5;
-    text-decoration: none;
+	color: #f5f5f5;
+	text-decoration: none;
 }
 
 .websites > tbody > tr > .small-table-data.col-2 > a:hover {
-    text-decoration: underline;
+	text-decoration: underline;
 }
 
 .small-table.companies {
-    height: fit-content;
+	height: fit-content;
 }
 
 .small-table.websites > tbody > tr > .small-table-head,
 .small-table.websites > tbody > tr > .small-table-data,
 .small-table.companies > tbody > tr > .small-table-head,
 .small-table.companies > tbody > tr > .small-table-data {
-    padding-left: 1rem;
-    padding-right: 1rem;
+	padding-left: 1rem;
+	padding-right: 1rem;
 }
 
 .del-btn {
 	width: 8rem;
-    min-width: 8rem;
+	min-width: 8rem;
 	border-radius: 4rem;
 	padding: 4px;
 	background-color: #990000;
@@ -505,14 +516,14 @@ html {
 }
 
 .update-game-form {
-    width: 90%;
-    margin: 0 auto;
+	width: 90%;
+	margin: 0 auto;
 }
 
 .form-inputs {
-    display: flex;
-    justify-content: space-evenly;
-    margin-top: 2rem;
+	display: flex;
+	justify-content: space-evenly;
+	margin-top: 2rem;
 }
 
 .cont-support,
@@ -520,55 +531,55 @@ html {
 .played-form,
 .cat-status,
 .rtng-notes {
-    width: 25%;
-    padding: 8px;
-    border: 2px solid #f5f5f5;
-    border-radius: 1rem;
+	width: 25%;
+	padding: 8px;
+	border: 2px solid #f5f5f5;
+	border-radius: 1rem;
 }
 
 .cont-support > p,
 .owned-form > p,
 .played-form > p {
-    margin: 8px;
-    font-weight: bolder;
-    text-align: center;
+	margin: 8px;
+	font-weight: bolder;
+	text-align: center;
 }
 
 .radio-options {
-    display: flex;
-    justify-content: space-evenly;
-    margin-bottom: 8px;
-    gap: 2rem;
+	display: flex;
+	justify-content: space-evenly;
+	margin-bottom: 8px;
+	gap: 2rem;
 }
 
 .radio-grp {
-    display: flex;
-    flex-direction: row-reverse;
+	display: flex;
+	flex-direction: row-reverse;
 }
 
-.radio-grp input[type=radio] {
-    margin: 0 8px 0 0;
+.radio-grp input[type="radio"] {
+	margin: 0 8px 0 0;
 }
 
 .owned-options,
 .played-options {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    grid-row-gap: 8px;
-    align-items: center;
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	grid-row-gap: 8px;
+	align-items: center;
 }
 
 .chkbx-grp {
-    display: flex;
-    padding: 0 8px 0 8px;
-    justify-content: space-between;
+	display: flex;
+	padding: 0 8px 0 8px;
+	justify-content: space-between;
 }
 
 .cat-status,
 .rtng-notes {
-    width: 80%;
-    margin: 2rem auto;
-    padding: 2rem;
+	width: 80%;
+	margin: 2rem auto;
+	padding: 2rem;
 }
 
 .cat-stat-select,
@@ -576,48 +587,48 @@ html {
 .form-hrs-input,
 .form-rating,
 .form-notes {
-    width: 50%;
-    margin: 0 auto 1rem;
-    display: flex;
-    justify-content: space-between;
+	width: 50%;
+	margin: 0 auto 1rem;
+	display: flex;
+	justify-content: space-between;
 }
 
 .cat-stat-select > select {
-    max-width: 325px;
-    font-family: inherit;
-    height: 28px;
-    border-width: 2px;
-    border-style: inset;
+	max-width: 325px;
+	font-family: inherit;
+	height: 28px;
+	border-width: 2px;
+	border-style: inset;
 }
 
-.form-date-select > input[type=date],
-.form-hrs-input > input[type=number],
-.form-rating > input[type=number] {
-    max-width: 305px;
-    font-family: inherit;
-    height: 24px;
+.form-date-select > input[type="date"],
+.form-hrs-input > input[type="number"],
+.form-rating > input[type="number"] {
+	max-width: 305px;
+	font-family: inherit;
+	height: 24px;
 }
 
-.form-hrs-input > input[type=number] {
-    height: 22px;
+.form-hrs-input > input[type="number"] {
+	height: 22px;
 }
 
 .form-notes {
-    flex-direction: column;
-    gap: 8px;
+	flex-direction: column;
+	gap: 8px;
 }
 
 .form-notes > textarea {
-    width: 100%;
-    height: 8rem;
-    font-family: -webkit-body;
-    border-width: 2px;
-    border-style: inset;
+	width: 100%;
+	height: 8rem;
+	font-family: -webkit-body;
+	border-width: 2px;
+	border-style: inset;
 }
 
 .btn-container {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+	width: 100%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
 }

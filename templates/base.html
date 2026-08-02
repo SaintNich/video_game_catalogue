@@ -5,23 +5,25 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<title>{% block title %}default title{% endblock %}</title>
 		<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
-		<link rel="icon" href="{{ url_for('static', filename='imgs/gaming_icon.png') }}">
+		<link rel="icon" href="{{ url_for('static', filename='imgs/gaming_icon.png') }}" />
 	</head>
 
 	<body>
-		{% with messages = get_flashed_messages(with_categories=true) %} 
-            {% if messages %} 
-                {% for category, message in messages %}
-		            <div class="flashes">
-		            	<p class="flashed-cat {{ category }}">{{ category }}</p>
-		            	<p class="flashed-msg">{{ message }}</p>
-		            </div>
-		        {% endfor %} 
-            {% endif %} 
-        {% endwith %}
+		{% with messages = get_flashed_messages(with_categories=true) %} {% if messages %} {% for category, message in
+		messages %}
+		<div class="flashes">
+			<p class="flashed-cat {{ category }}">{{ category }}</p>
+			<p class="flashed-msg">{{ message }}</p>
+		</div>
+		{% endfor %} {% endif %} {% endwith %}
 
-		<main>
-            {% block content %} {% endblock %}
-        </main>
+		<main>{% block content %} {% endblock %}</main>
+
+		<script type="text/javascript">
+			window.onload = function () {
+				document.body.style.cursor = "default";
+			};
+		</script>
+		{% block added_script %} {% endblock %}
 	</body>
 </html>

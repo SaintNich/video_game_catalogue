@@ -9,17 +9,17 @@
 	<div class="add-game-search">
 		<form method="POST" action="{{ url_for('game_search') }}">
 			<input class="form-txt-box" type="text" name="game_search" placeholder="Search to add to catalogue." />
-			<button class="sub-btn" type="submit">Search</button>
+			<button class="sub-btn" type="submit" onclick="document.body.style.cursor='progress'; return true;">Search</button>
 		</form>
 	</div>
 	<div class="add-game-no-search">
 		<form method="POST" action="{{ url_for('steam_sync') }}">
 			<input type="hidden" name="steam_sync" />
-			<button class="sub-btn" type="submit">Sync Steam</button>
+			<button class="sub-btn" type="submit" onclick="document.body.style.cursor='progress'; return true;">Sync Steam</button>
 		</form>
 		<form method="POST" action="{{ url_for('gamepass_update') }}">
 			<input type="hidden" name="gamepass_update" />
-			<button class="sub-btn" type="submit">Sync GamePass</button>
+			<button class="sub-btn" type="submit" onclick="document.body.style.cursor='wait'; return true;">Sync GamePass</button>
 		</form>
 	</div>
 </div>

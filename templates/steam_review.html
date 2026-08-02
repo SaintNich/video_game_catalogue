@@ -4,9 +4,8 @@
 
 {% block content %}
 
-<div class="close-btn">
-	<a href="{{ url_for('index') }}">X</a>
-</div>
+<a class="close-btn" href="{{ url_for('index') }}">X</a>
+
 <h1 class="main-heading">Steam Game Review</h1>
 
 <div class="search-results">
@@ -18,7 +17,7 @@
 				type="hidden"
 				name="steam_selection"
 				value="{{ steam_game.steam_game_id }}, {{ steam_game.steam_game_name }}, {{ steam_game.steam_game_playtime }}" />
-			<button class="sub-btn" type="submit">Select Game</button>
+			<button class="sub-btn" type="submit" onclick="document.body.style.cursor='wait'; return true;">Select Game</button>
 		</form>
 	</div>
 	{% endfor %}

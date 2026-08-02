@@ -4,9 +4,7 @@
 
 {% block content %}
 
-<div class="close-btn">
-		<a href="{{ url_for('index') }}">X</a>
-</div>
+<a class="close-btn" href="{{ url_for('index') }}">X</a>
 
 <h1 class="main-heading">HowLongToBeat Selection</h1>
 
@@ -21,7 +19,7 @@
                 <option value="{{ result.game_id }}, {{ result.main_story }}, {{ result.main_extra }}, {{ result.completionist }}, {{ result.all_styles }}">{{ result.game_name }} released in {{ result.release_world }}</option>
                 {% endfor %}
             </select>
-            <button class="sub-btn" type="submit">Submit</button>
+            <button class="sub-btn" type="submit" onclick="document.body.style.cursor='wait'; return true;">Submit</button>
         </div>
     </form>
 </div>
