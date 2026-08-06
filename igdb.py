@@ -467,12 +467,30 @@ def update_game_platforms(game_table_id: int, full_game_result: dict):
                     "abbr": "GOG",
                     "name": "GOG",
                     "alt_name": "Good Old Games"
+                },
+                {
+                    "abbr": "EA",
+                    "name": "EA Games",
+                    "alt_name": None,
+                },
+                {
+                    "abbr": None,
+                    "name": "Ubisoft",
+                    "alt_name": None,
+                },
+                {
+                    "abbr": None,
+                    "name": "Amazon",
+                    "alt_name": None,
+                },
+                {
+                    "abbr": None,
+                    "name": "Xbox Gamepass",
+                    "alt_name": "Gamepass",
                 }
             ]
             
-            for platform in platforms:
-                if platform.get("name") == "PC (Microsoft Windows)":
-                    all_platforms.extend(addl_platforms)
+            all_platforms.extend(addl_platforms)
 
             for platform in all_platforms:
                 conn.execute(
