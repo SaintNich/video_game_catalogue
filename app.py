@@ -52,7 +52,7 @@ def index():
 
     try:
         allowed_sort = ["title", "date_added", "hours_played"]
-        
+
         catalog_filters = [
             "Backlog",
             "In-Progress",
@@ -64,23 +64,25 @@ def index():
             "Wishlisted",
             "Xbox Gamepass",
         ]
-        
+
         own_filters = ["owned", "not_owned"]
-        
+
         packed_owned_platform_filters = conn.execute("""
             SELECT platform
             FROM game_platforms
             GROUP BY platform
         """).fetchall()
-        
-        owned_platform_filters = [platform[0] for platform in packed_owned_platform_filters]
-        
+
+        owned_platform_filters = [
+            platform[0] for platform in packed_owned_platform_filters
+        ]
+
         sort_value = request.args.get("sort")
         cat_filter_value = request.args.get("catalog")
         own_value = request.args.get("owned")
         platform_value = request.args.getlist("platform")
         search_value = request.args.get("catalog_search")
-        
+
         params = []
         conditions = []
 
@@ -111,7 +113,7 @@ def index():
             where_clause = "WHERE " + " AND ".join(conditions)
         else:
             where_clause = ""
-            
+
         catalog_data = conn.execute(
             f"""
             SELECT
@@ -133,7 +135,8 @@ def index():
             {where_clause}
             GROUP BY g.title
             ORDER BY {sort_by} NULLS LAST                
-        """, params
+        """,
+            params,
         ).fetchall()
 
     except sqlite3.Error as e:
@@ -148,7 +151,9 @@ def index():
                 "title": title,
                 "cover": "//images.igdb.com/igdb/image/upload/t_cover_big/"
                 + cover_id
-                + ".webp" if cover_id else None,
+                + ".webp"
+                if cover_id
+                else None,
                 "date_added": date_added,
                 "hours_played": hours_played,
                 "catalog_status": catalog_status,
@@ -158,13 +163,13 @@ def index():
             for game_table_id, title, cover_id, date_added, hours_played, catalog_status, platform_id, platform in catalog_data
         ]
         return render_template(
-            "index.html", 
-            catalog=catalog, 
-            sort_by=sort_by, 
-            cat_filter_value=cat_filter_value, 
-            own_value=own_value, 
+            "index.html",
+            catalog=catalog,
+            sort_by=sort_by,
+            cat_filter_value=cat_filter_value,
+            own_value=own_value,
             owned_platform_filters=owned_platform_filters,
-            platform_value=platform_value
+            platform_value=platform_value,
         )
 
     finally:
@@ -988,6 +993,24 @@ def game_details_form():
         return redirect(url_for("index"))
 
 
+def split_string_time(hours_played=str) -> list:
+    split_time = hours_played.split(":")
+    split_hours = split_time[0]
+    split_mins = split_time[1]
+
+    return [split_hours, split_mins]
+
+
+def convert_string_time(string_time=list) -> float:
+    list_hours = string_time[0]
+    list_minutes = string_time[1]
+    conv_minutes = (int(list_minutes) * 100) / 60
+    conv_time = int(list_hours) + (conv_minutes / 100)
+    hours_played = float(round(conv_time, 2))
+
+    return hours_played
+
+
 @app.route("/update_game_details", methods=["GET", "POST"])
 def update_game_details():
     if request.method == "POST":
@@ -1005,11 +1028,24 @@ def update_game_details():
             catalog_update = request.form.get("catalog_status")
             date_main_update = request.form.get("date_main")
             date_full_update = request.form.get("date_full")
-            hours_update = (
-                float(request.form.get("hours_played"))
+            hours_played = (
+                request.form.get("hours_played")
                 if request.form.get("hours_played")
-                else 0.0
+                else None
             )
+
+            if hours_played is None:
+                hours_update = 0.0
+
+            else:
+                if ":" in hours_played:
+                    print("Colon")
+                    string_time = split_string_time(hours_played)
+                    hours_update = float(convert_string_time(string_time))
+                elif "." in hours_played:
+                    print("Period")
+                    hours_update = float(hours_played)
+
             rating_update = (
                 float(request.form.get("rating")) if request.form.get("rating") else 0.0
             )
@@ -1071,7 +1107,7 @@ def update_game_details():
                 """,
                     (user_game_rel_id[0],),
                 )
-                
+
                 for platform in owned_platforms:
                     conn.execute(
                         """

@@ -1,7 +1,7 @@
 html {
 	background-color: #343434;
 	color: #f5f5f5;
-    cursor: progress;
+	cursor: progress;
 }
 
 .flashes {
@@ -105,7 +105,7 @@ html {
 .srch-selection,
 .cat-stat-select > select,
 .form-date-select > input[type="date"],
-.form-hrs-input > input[type="number"],
+.form-hrs-input > input[type="text"],
 .form-rating > input[type="number"],
 .form-notes > textarea,
 .filter-grp > select {
@@ -198,14 +198,14 @@ html {
 
 .sub-btn:hover,
 .close-btn:hover {
-    cursor: pointer;
-    background-color: #f9f9f9;
-    border-color: #f9f9f9;
+	cursor: pointer;
+	background-color: #f9f9f9;
+	border-color: #f9f9f9;
 }
 
 .sub-btn:active,
 .close-btn:active {
-    border-style: inset;
+	border-style: inset;
 }
 
 .search-results {
@@ -602,14 +602,14 @@ html {
 }
 
 .form-date-select > input[type="date"],
-.form-hrs-input > input[type="number"],
+.form-hrs-input > input[type="text"],
 .form-rating > input[type="number"] {
 	max-width: 305px;
 	font-family: inherit;
 	height: 24px;
 }
 
-.form-hrs-input > input[type="number"] {
+.form-hrs-input > input[type="text"] {
 	height: 22px;
 }
 

@@ -117,14 +117,14 @@
 			</div>
 			<div class="form-hrs-input">
 				<label for="hours_played">Hours played: </label>
-				<input type="number" id="hours_played" name="hours_played" value="{{ cur_relationship_values.hours_played }}" />
+				<input type="text" id="hours_played" name="hours_played" value="{{ cur_relationship_values.hours_played if cur_relationship_values.hours_played else 0.0 }}" />
 			</div>
 		</div>
 
 		<div class="rtng-notes">
 			<div class="form-rating">
 				<label for="rating">Rating: </label>
-				<input type="number" id="rating" name="rating" min="0" max="5" value="{{ cur_relationship_values.rating }}" />
+				<input type="number" step="0.1" id="rating" name="rating" min="0" max="5" value="{{ cur_relationship_values.rating }}" />
 			</div>
 			<div class="form-notes">
 				<label for="user_notes">Notes: </label>
