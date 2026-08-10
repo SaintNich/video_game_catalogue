@@ -4,13 +4,14 @@
 
 {% block content %}
 	
-	<a id="close-btn" class="close-btn" href="{{ url_for('index') }}">X</a>
+	<a id="close-btn" class="close-btn" href="{{ url_for('index') }}?{{ fltr_string }}">X</a>
 
 	<h1 class="main-heading">{{ core_game_dict.game_title }}</h1>
 	<form class="update-btn" method="POST" action="{{ url_for('game_details_form') }}">
 		<input type="hidden" name="game_table_id" value="{{ game_table_id }}" />
 		<input type="hidden" name="game_title" value="{{ core_game_dict.game_title }}">
 		<input type="hidden" name="platform_dict" value="{{ platform_dict }}" />
+		<input type="hidden" name="fltr_string" value="{{ fltr_string }}" />
 		<button class="sub-btn" type="submit" onclick="document.body.style.cursor='wait'; return true;">Update Game</button>
 	</form>
 

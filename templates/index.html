@@ -81,11 +81,11 @@
 	{% for item in catalog %}
 	<div class="catalog-game">
 		<figure>
-			<a href="{{ url_for('game_details', game_table_id=item.game_table_id) }}">
+			<a href="{{ url_for('game_details', game_table_id=item.game_table_id, return_to=fltr_string) }}">
 				<img class="cover-art" src="{{ item.cover }}" alt="Cover art for {{ item.title }}" />
 			</a>
 			<figcaption>
-				<a href="{{ url_for('game_details', game_table_id=item.game_table_id) }}">{{ item.title }}</a>
+				<a href="{{ url_for('game_details', game_table_id=item.game_table_id, return_to=fltr_string) }}">{{ item.title }}</a>
 			</figcaption>
 		</figure>
 	</div>

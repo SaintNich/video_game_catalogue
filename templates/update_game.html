@@ -4,12 +4,13 @@
 
 {% block content %}
 
-	<a id="close-btn" class="close-btn" href="{{ url_for('game_details', game_table_id=game_table_id) }}">X</a>
+	<a id="close-btn" class="close-btn" href="{{ url_for('game_details', game_table_id=game_table_id, return_to=fltr_string) }}">X</a>
 
 	<h1 class="main-heading">Update Details: {{ game_title }}</h1>
 
 	<form class="update-game-form" method="POST" , action="{{ url_for('update_game_details') }}">
 		<input type="hidden" name="game_table_id" value="{{ game_table_id }}" />
+		<input type="hidden" name="fltr_string" value="{{ fltr_string }}" />
 		<div class="form-inputs">
 			<div class="cont-support">
 				<p>Does this game have controller support?</p>
@@ -136,7 +137,11 @@
 			</div>
 		</div>
 
-		<div class="btn-container"><button class="sub-btn" type="submit" onclick="document.body.style.cursor='wait'; return true;">Update</button></div>
+		<div class="btn-container">
+			<button class="sub-btn" type="submit" onclick="document.body.style.cursor='wait'; return true;">
+				Update
+			</button>
+		</div>
 	</form>
 
 {% endblock %}

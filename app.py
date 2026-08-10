@@ -140,7 +140,7 @@ def index():
         ).fetchall()
 
     except sqlite3.Error as e:
-        log.error(f"An error occured with the database: {type(e).__name__}: {e}")
+        log.error(f"An error occurred with the database: {type(e).__name__}: {e}")
         return
 
     else:
@@ -162,6 +162,10 @@ def index():
             }
             for game_table_id, title, cover_id, date_added, hours_played, catalog_status, platform_id, platform in catalog_data
         ]
+
+        fltr_string_bytes = request.query_string
+        fltr_string = fltr_string_bytes.decode("utf-8")
+
         return render_template(
             "index.html",
             catalog=catalog,
@@ -170,6 +174,7 @@ def index():
             own_value=own_value,
             owned_platform_filters=owned_platform_filters,
             platform_value=platform_value,
+            fltr_string=fltr_string
         )
 
     finally:
@@ -506,6 +511,8 @@ def game_details(game_table_id):
     conn = get_conn()
 
     try:
+        fltr_string = request.args.get("return_to")
+
         core_game_info = conn.execute(
             """
             SELECT 
@@ -693,7 +700,7 @@ def game_details(game_table_id):
             f"An error occurred during database operation. {type(e).__name__}: {e}"
         )
         flash("Something went wrong processing game details, try again.", "error")
-        return redirect(url_for("index"))
+        return redirect(url_for("index") + "?" + fltr_string)
 
     finally:
         conn.close()
@@ -841,6 +848,7 @@ def game_details(game_table_id):
 
     return render_template(
         "game_details.html",
+        fltr_string=fltr_string,
         game_table_id=game_table_id,
         core_game_dict=core_game_dict,
         relationship_dict=relationship_dict,
@@ -859,6 +867,8 @@ def game_details(game_table_id):
 
 @app.route("/game_details_form", methods=["GET", "POST"])
 def game_details_form():
+    fltr_string = request.form.get("fltr_string")
+
     if request.method == "POST":
         conn = get_conn()
         try:
@@ -963,7 +973,7 @@ def game_details_form():
         except (TypeError, ValueError, SyntaxError) as e:
             log.error(f"Improper datatype returned. {type(e).__name__}: {e}")
             flash("Something went wrong obtaining information", "error")
-            return redirect(url_for("index"))
+            return redirect(url_for("index") + "?" + fltr_string)
 
         except sqlite3.Error as e:
             log.error(
@@ -973,13 +983,14 @@ def game_details_form():
                 "Something went wrong during the database operation, please try again",
                 "error",
             )
-            return redirect(url_for("index"))
+            return redirect(url_for("index") + "?" + fltr_string)
 
         else:
             return render_template(
                 "update_game.html",
                 game_table_id=game_table_id,
                 game_title=game_title,
+                fltr_string=fltr_string,
                 platform_dict=platform_dict,
                 core_game_values=core_game_values,
                 cur_relationship_values=cur_relationship_values,
@@ -990,7 +1001,7 @@ def game_details_form():
         finally:
             conn.close()
     else:
-        return redirect(url_for("index"))
+        return redirect(url_for("index") + "?" + fltr_string)
 
 
 def split_string_time(hours_played=str) -> list:
@@ -1013,6 +1024,8 @@ def convert_string_time(string_time=list) -> float:
 
 @app.route("/update_game_details", methods=["GET", "POST"])
 def update_game_details():
+    fltr_string = request.form.get("fltr_string")
+
     if request.method == "POST":
         conn = get_conn()
         try:
@@ -1022,7 +1035,7 @@ def update_game_details():
                     "Something went wrong accessing game information, try again",
                     "error",
                 )
-                return redirect(url_for("index"))
+                return redirect(url_for("index") + "?" + fltr_string)
 
             game_table_id = int(request.form.get("game_table_id"))
             catalog_update = request.form.get("catalog_status")
@@ -1039,11 +1052,9 @@ def update_game_details():
 
             else:
                 if ":" in hours_played:
-                    print("Colon")
                     string_time = split_string_time(hours_played)
                     hours_update = float(convert_string_time(string_time))
                 elif "." in hours_played:
-                    print("Period")
                     hours_update = float(hours_played)
 
             rating_update = (
@@ -1157,15 +1168,15 @@ def update_game_details():
             )
             flash("An unexpected error occurred, try again.", "error")
             conn.rollback()
-            return redirect(url_for("game_details", game_table_id=game_table_id))
+            return redirect(url_for("game_details", game_table_id=game_table_id, return_to=fltr_string))
 
         else:
-            return redirect(url_for("game_details", game_table_id=game_table_id))
+            return redirect(url_for("game_details", game_table_id=game_table_id, return_to=fltr_string))
 
         finally:
             conn.close()
     else:
-        return redirect(url_for("index"))
+        return redirect(url_for("index") + "?" + fltr_string)
 
 
 @app.route("/delete_game", methods=["GET", "POST"])
